@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    container_name: primata_estetica_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 88187462
+      POSTGRES_DB: primata_estetica
+    ports:
+      - "5432:5432"
+    volumes:
+      - primata_estetica_data:/var/lib/postgresql/data
+    networks:
+      - primata_estetica_network
+
+  # Aqui você pode adicionar outros serviços, como a aplicação que vai usar o banco.
+
+volumes:
+  primata_estetica_data:
+    driver: local
+
+networks:
+  primata_estetica_network:
+    driver: bridge

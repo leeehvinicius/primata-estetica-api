@@ -19,6 +19,47 @@ model User {
   refreshTokenHash String? 
 
   profile  Profile?
+
+  // Relações com clientes
+  attendances Attendance[]
+  medicalHistory MedicalHistory[]
+  treatments  Treatment[]
+
+  // Relações com profissionais
+  professionalSchedules ProfessionalSchedule[]
+  professionalServices ProfessionalService[]
+
+  // Relações com serviços
+  services        Service[]
+  servicePackages ServicePackage[]
+  servicePromotions ServicePromotion[]
+
+  // Relações com agendamentos
+  appointments Appointment[]
+  appointmentReminders AppointmentReminder[]
+
+  // Relações com pagamentos
+  payments Payment[]
+  paymentReceipts PaymentReceipt[]
+  commissions Commission[]
+
+  // Relações com estoque
+  products Product[]
+  productCategories ProductCategory[]
+  suppliers Supplier[]
+  stockMovements StockMovement[]
+  stockAlerts StockAlert[]
+
+  // Relações de segurança e auditoria
+  auditLogs       AuditLog[]
+  securityEvents  SecurityEvent[]
+  resolvedSecurityEvents SecurityEvent[] @relation("SecurityEventResolver")
+  sessions        UserSession[]
+  terminatedSessions UserSession[] @relation("SessionTerminator")
+  passwordHistory PasswordHistory[]
+  loginAttempts   LoginAttempt[]
+  apiUsage        ApiUsage[]
+  securityConfigurations SecurityConfiguration[]
 }
 
 model Profile {
@@ -27,13 +68,1147 @@ model Profile {
   phone     String?
   document  String?   // CPF/CNPJ
   avatarUrl String?
-  role      Role      @default(RECEPTION) // RBAC inicial
+  role      Role      @default(RECEPCIONISTA) // RBAC com os 4 perfis principais
+  isActive  Boolean   @default(true) // Para controle de acesso
+  lastLogin DateTime? // Para auditoria
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Módulo de Clientes
+model Client {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?  @unique
+  phone       String
+  birthDate   DateTime?
+  gender      Gender?
+  document    String?  @unique // CPF
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  emergencyContact String?
+  emergencyPhone   String?
+  notes       String?  // Observações gerais
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  preferences ClientPreference?
+  attendances Attendance[]
+  medicalHistory MedicalHistory[]
+  treatments  Treatment[]
+  appointments Appointment[]
+  payments Payment[]
+  agreements Agreement[] // Convênios do cliente
+}
+
+model ClientPreference {
+  id              String   @id @default(cuid())
+  clientId        String   @unique
+  skinType        SkinType?
+  allergies       String?  // Lista de alergias
+  medications     String?  // Medicamentos em uso
+  contraindications String? // Contraindicações
+  goals           String?  // Objetivos estéticos
+  budget          BudgetRange?
+  preferredTime   PreferredTime?
+  notes           String?  // Observações específicas
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  clientId    String
+  serviceType ServiceType
+  description String
+  date        DateTime
+  duration    Int?     // Duração em minutos
+  price       Decimal  @db.Decimal(10, 2)
+  status      AttendanceStatus @default(SCHEDULED)
+  notes       String?  // Observações do atendimento
+  createdBy   String   // ID do usuário que criou
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [createdBy], references: [id])
+}
+
+model MedicalHistory {
+  id          String   @id @default(cuid())
+  clientId    String
+  condition   String   // Condição médica
+  description String?  // Descrição detalhada
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  severity    Severity @default(MILD)
+  notes       String?  // Observações médicas
+  createdBy   String   // ID do usuário que registrou
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [createdBy], references: [id])
+}
+
+model Treatment {
+  id          String   @id @default(cuid())
+  clientId    String
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  sessions    Int      @default(1)
+  completedSessions Int @default(0)
+  status      TreatmentStatus @default(ACTIVE)
+  results     String?  // Resultados observados
+  notes       String?  // Observações do tratamento
+  createdBy   String   // ID do usuário que prescreveu
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [createdBy], references: [id])
+}
+
+// Módulo de Profissionais
+model Professional {
+  id              String   @id @default(cuid())
+  name            String
+  email           String?  @unique
+  phone           String
+  document        String?  @unique // CPF
+  specialty       String   // Especialidade
+  license         String?  // Número da licença profissional
+  birthDate       DateTime?
+  gender          Gender?
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  emergencyContact String?
+  emergencyPhone   String?
+  hireDate        DateTime @default(now())
+  salary          Decimal? @db.Decimal(10, 2)
+  notes           String?  // Observações gerais
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  schedules ProfessionalSchedule[]
+  services  ProfessionalService[]
+  appointments Appointment[]
+  commissions Commission[]
+}
+
+model ProfessionalSchedule {
+  id              String   @id @default(cuid())
+  professionalId  String
+  dayOfWeek       DayOfWeek
+  startTime       String   // HH:MM
+  endTime         String   // HH:MM
+  isActive        Boolean  @default(true)
+  notes           String?  // Observações específicas
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [createdBy], references: [id])
+}
+
+model ProfessionalService {
+  id              String   @id @default(cuid())
+  professionalId  String
+  serviceName     String
+  description     String?
+  duration        Int      // Duração em minutos
+  price           Decimal  @db.Decimal(10, 2)
+  isActive        Boolean  @default(true)
+  notes           String?  // Observações do serviço
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [createdBy], references: [id])
+}
+
+// Módulo de Serviços
+model Service {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  category        ServiceCategory
+  duration        Int      // Duração em minutos
+  basePrice       Decimal  @db.Decimal(10, 2)
+  currentPrice    Decimal  @db.Decimal(10, 2)
+  isActive        Boolean  @default(true)
+  requiresProfessional Boolean @default(true)
+  maxConcurrentClients Int @default(1)
+  preparationTime Int?     // Tempo de preparação em minutos
+  recoveryTime    Int?     // Tempo de recuperação em minutos
+  contraindications String? // Contraindicações
+  benefits        String?  // Benefícios do serviço
+  notes           String?  // Observações gerais
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  packages        ServicePackageItem[]
+  promotions      ServicePromotionItem[]
+  appointments    Appointment[]
+  payments        Payment[]
+  serviceProducts ServiceProduct[] // Relação com produtos do estoque
+  agreementDiscounts AgreementDiscount[] // Descontos de convênios
+  coverageLimits  CoverageLimit[] // Limites de cobertura
+  coverageAlerts  CoverageAlert[] // Alertas de cobertura
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+model ServicePackage {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  discountType    DiscountType
+  discountValue   Decimal  @db.Decimal(10, 2)
+  originalPrice   Decimal  @db.Decimal(10, 2)
+  finalPrice      Decimal  @db.Decimal(10, 2)
+  validityDays    Int?     // Dias de validade do pacote
+  maxUses         Int?     // Máximo de usos do pacote
+  isActive        Boolean  @default(true)
+  startDate       DateTime?
+  endDate         DateTime?
+  notes           String?  // Observações do pacote
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  items           ServicePackageItem[]
+  agreementDiscounts AgreementDiscount[] // Descontos de convênios
+  coverageLimits  CoverageLimit[] // Limites de cobertura
+  coverageAlerts  CoverageAlert[] // Alertas de cobertura
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+model ServicePackageItem {
+  id              String   @id @default(cuid())
+  packageId       String
+  serviceId       String
+  quantity        Int      @default(1)
+  individualPrice Decimal  @db.Decimal(10, 2)
+  notes           String?  // Observações específicas
+
+  package         ServicePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  service         Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+}
+
+model ServicePromotion {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  promotionType   PromotionType
+  discountType    DiscountType
+  discountValue   Decimal  @db.Decimal(10, 2)
+  minPurchase     Decimal? @db.Decimal(10, 2) // Valor mínimo de compra
+  maxDiscount     Decimal? @db.Decimal(10, 2) // Desconto máximo
+  isActive        Boolean  @default(true)
+  startDate       DateTime
+  endDate         DateTime
+  applicableDays  DayOfWeek[] // Dias da semana aplicáveis
+  applicableHours String?  // Horários aplicáveis (ex: "09:00-18:00")
+  notes           String?  // Observações da promoção
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  items           ServicePromotionItem[]
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+model ServicePromotionItem {
+  id              String   @id @default(cuid())
+  promotionId     String
+  serviceId       String
+  additionalDiscount Decimal? @db.Decimal(10, 2) // Desconto adicional específico
+  notes           String?  // Observações específicas
+
+  promotion       ServicePromotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  service         Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+}
+
+// Módulo de Agendamento
+model Appointment {
+  id              String   @id @default(cuid())
+  clientId        String
+  professionalId  String?
+  serviceId       String
+  scheduledDate   DateTime
+  startTime       String   // HH:MM
+  endTime         String   // HH:MM
+  duration        Int      // Duração em minutos
+  status          AppointmentStatus @default(SCHEDULED)
+  appointmentType AppointmentType
+  priority        AppointmentPriority @default(NORMAL)
+  notes           String?  // Observações do agendamento
+  cancellationReason String? // Motivo do cancelamento
+  rescheduledFrom String? // ID do agendamento original (se remarcado)
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  professional    Professional? @relation(fields: [professionalId], references: [id])
+  service         Service  @relation(fields: [serviceId], references: [id])
+  user            User     @relation(fields: [createdBy], references: [id])
+  reminders       AppointmentReminder[]
+  payments        Payment[]
+}
+
+model AppointmentReminder {
+  id              String   @id @default(cuid())
+  appointmentId   String
+  reminderType    ReminderType
+  scheduledFor    DateTime
+  sentAt          DateTime?
+  status          ReminderStatus @default(PENDING)
+  message         String?  // Mensagem personalizada
+  sentVia         ReminderChannel[]
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  appointment     Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user            User       @relation(fields: [createdBy], references: [id])
+}
+
+// Módulo de Pagamentos
+model Payment {
+  id              String   @id @default(cuid())
+  clientId        String
+  appointmentId   String?
+  serviceId       String
+  amount          Decimal  @db.Decimal(10, 2)
+  discountAmount  Decimal  @db.Decimal(10, 2) @default(0)
+  finalAmount     Decimal  @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentDate     DateTime @default(now())
+  dueDate         DateTime?
+  notes           String?  // Observações do pagamento
+  transactionId   String?  // ID da transação externa
+  receiptNumber   String?  // Número do recibo
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id])
+  service         Service  @relation(fields: [serviceId], references: [id])
+  user            User     @relation(fields: [createdBy], references: [id])
+  receipts        PaymentReceipt[]
+  commissions     Commission[]
+  transactionLogs PaymentTransactionLog[]
+  agreementPayments AgreementPayment[] // Pagamentos com convênios
+}
+
+model PaymentReceipt {
+  id              String   @id @default(cuid())
+  paymentId       String
+  receiptNumber   String   @unique
+  receiptType     ReceiptType
+  amount          Decimal  @db.Decimal(10, 2)
+  issuedAt        DateTime @default(now())
+  notes           String?  // Observações do recibo
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  payment         Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+model Commission {
+  id              String   @id @default(cuid())
+  paymentId       String
+  professionalId  String
+  amount          Decimal  @db.Decimal(10, 2)
+  percentage      Decimal  @db.Decimal(5, 2) // Percentual da comissão
+  status          CommissionStatus @default(PENDING)
+  paidAt          DateTime?
+  notes           String?  // Observações da comissão
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  payment         Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+// Módulo de Estoque
+model Product {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  categoryId      String
+  supplierId      String?
+  sku             String?  @unique // Código do produto
+  barcode         String?  @unique // Código de barras
+  unit            ProductUnit
+  currentStock    Int      @default(0)
+  minStock        Int      @default(0) // Estoque mínimo
+  maxStock        Int?     // Estoque máximo
+  costPrice       Decimal  @db.Decimal(10, 2)
+  salePrice       Decimal  @db.Decimal(10, 2)
+  isActive        Boolean  @default(true)
+  requiresPrescription Boolean @default(false)
+  expirationDate  DateTime? // Data de validade
+  location        String?  // Localização no estoque
+  notes           String?  // Observações do produto
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  category        ProductCategory @relation(fields: [categoryId], references: [id])
+  supplier        Supplier? @relation(fields: [supplierId], references: [id])
+  user            User     @relation(fields: [createdBy], references: [id])
+  movements       StockMovement[]
+  serviceProducts ServiceProduct[]
+  alerts          StockAlert[]
+}
+
+model ProductCategory {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  isActive        Boolean  @default(true)
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  products        Product[]
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+model Supplier {
+  id              String   @id @default(cuid())
+  name            String
+  email           String?
+  phone           String
+  document        String?  @unique // CNPJ
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  contactPerson   String?  // Pessoa de contato
+  contactPhone    String?  // Telefone do contato
+  isActive        Boolean  @default(true)
+  notes           String?  // Observações do fornecedor
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  products        Product[]
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+model StockMovement {
+  id              String   @id @default(cuid())
+  productId       String
+  movementType    StockMovementType
+  quantity        Int
+  previousStock   Int      // Estoque anterior
+  currentStock    Int      // Estoque atual
+  unitCost        Decimal  @db.Decimal(10, 2)
+  totalCost       Decimal  @db.Decimal(10, 2)
+  reference       String?  // Referência (pedido, atendimento, etc.)
+  notes           String?  // Observações do movimento
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+model ServiceProduct {
+  id              String   @id @default(cuid())
+  serviceId       String
+  productId       String
+  quantity        Decimal  @db.Decimal(10, 3) // Quantidade utilizada por atendimento
+  isRequired      Boolean  @default(true) // Se é obrigatório para o serviço
+  notes           String?  // Observações específicas
+
+  service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model StockAlert {
+  id              String   @id @default(cuid())
+  productId       String
+  alertType       StockAlertType
+  message         String
+  isActive        Boolean  @default(true)
+  resolvedAt      DateTime?
+  notes           String?  // Observações da alerta
+  createdBy       String   // ID do usuário que criou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [createdBy], references: [id])
+}
+
+// Enums
 enum Role {
-  ADMIN
-  DOCTOR
-  RECEPTION
+  ADMINISTRADOR    // Controle total sobre o sistema
+  MEDICO          // Acesso completo aos históricos e registros médicos
+  RECEPCIONISTA   // Atendimento inicial e agendamentos
+  SERVICOS_GERAIS // Manutenção e organização das instalações
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum SkinType {
+  NORMAL
+  DRY
+  OILY
+  COMBINATION
+  SENSITIVE
+  ACNE_PRONE
+}
+
+enum BudgetRange {
+  LOW
+  MEDIUM
+  HIGH
+  PREMIUM
+}
+
+enum PreferredTime {
+  MORNING
+  AFTERNOON
+  EVENING
+  FLEXIBLE
+}
+
+enum ServiceType {
+  CONSULTATION
+  TREATMENT
+  PROCEDURE
+  FOLLOW_UP
+  EMERGENCY
+}
+
+enum AttendanceStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum Severity {
+  MILD
+  MODERATE
+  SEVERE
+  CRITICAL
+}
+
+enum TreatmentStatus {
+  PLANNED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum ServiceCategory {
+  FACIAL_TREATMENT    // Tratamentos faciais
+  BODY_TREATMENT      // Tratamentos corporais
+  HAIR_REMOVAL        // Depilação
+  SKIN_CLEANING       // Limpeza de pele
+  AESTHETIC_PROCEDURE // Procedimentos estéticos
+  CONSULTATION        // Consultas
+  MAINTENANCE         // Manutenção
+  OTHER               // Outros
+}
+
+enum DiscountType {
+  PERCENTAGE  // Desconto percentual
+  FIXED       // Desconto fixo em valor
+  FREE        // Grátis
+}
+
+enum PromotionType {
+  SEASONAL    // Promoção sazonal
+  WEEKDAY     // Promoção de dia da semana
+  TIME_BASED  // Promoção por horário
+  VOLUME      // Promoção por volume
+  LOYALTY     // Promoção de fidelidade
+  FIRST_TIME  // Promoção para primeira vez
+  BIRTHDAY    // Promoção de aniversário
+  OTHER       // Outras promoções
+}
+
+enum AppointmentStatus {
+  SCHEDULED       // Agendado
+  CONFIRMED       // Confirmado
+  IN_PROGRESS     // Em andamento
+  COMPLETED       // Concluído
+  CANCELLED       // Cancelado
+  NO_SHOW         // Não compareceu
+  RESCHEDULED     // Remarcado
+  WAITING         // Aguardando
+}
+
+enum AppointmentType {
+  CONSULTATION    // Consulta
+  TREATMENT       // Tratamento
+  PROCEDURE       // Procedimento
+  FOLLOW_UP       // Retorno
+  EMERGENCY       // Emergência
+  MAINTENANCE     // Manutenção
+  EVALUATION      // Avaliação
+  OTHER           // Outro
+}
+
+enum AppointmentPriority {
+  LOW         // Baixa
+  NORMAL      // Normal
+  HIGH        // Alta
+  URGENT      // Urgente
+}
+
+enum ReminderType {
+  CONFIRMATION    // Confirmação de agendamento
+  REMINDER_24H    // Lembrete 24h antes
+  REMINDER_2H     // Lembrete 2h antes
+  REMINDER_30MIN  // Lembrete 30min antes
+  CUSTOM          // Lembrete personalizado
+}
+
+enum ReminderStatus {
+  PENDING     // Pendente
+  SENT        // Enviado
+  FAILED      // Falhou
+  CANCELLED   // Cancelado
+}
+
+enum ReminderChannel {
+  EMAIL       // Email
+  SMS         // SMS
+  WHATSAPP    // WhatsApp
+  PUSH        // Push notification
+  CALL        // Ligação
+}
+
+enum PaymentMethod {
+  CASH        // Dinheiro
+  CREDIT_CARD // Cartão de crédito
+  DEBIT_CARD  // Cartão de débito
+  PIX         // PIX
+  BANK_TRANSFER // Transferência bancária
+  CHECK       // Cheque
+  VOUCHER     // Vale
+  OTHER       // Outro
+}
+
+enum PaymentStatus {
+  PENDING     // Pendente
+  PAID        // Pago
+  PARTIAL     // Parcialmente pago
+  CANCELLED   // Cancelado
+  REFUNDED    // Reembolsado
+  OVERDUE     // Vencido
+}
+
+enum ReceiptType {
+  INVOICE     // Fatura
+  RECEIPT     // Recibo
+  PROOF       // Comprovante
+  TAX         // Nota fiscal
+}
+
+enum CommissionStatus {
+  PENDING     // Pendente
+  PAID        // Pago
+  CANCELLED   // Cancelado
+}
+
+enum ProductUnit {
+  UNIT        // Unidade
+  ML          // Mililitros
+  GRAM        // Gramas
+  PACKAGE     // Pacote
+  BOTTLE      // Frasco
+  TUBE        // Tubo
+  AMPOULE     // Ampola
+  SYRINGE     // Seringa
+  OTHER       // Outro
+}
+
+enum StockMovementType {
+  IN          // Entrada
+  OUT         // Saída
+  ADJUSTMENT  // Ajuste
+  TRANSFER    // Transferência
+  LOSS        // Perda
+  EXPIRATION  // Vencimento
+}
+
+enum StockAlertType {
+  LOW_STOCK       // Estoque baixo
+  OUT_OF_STOCK    // Sem estoque
+  EXPIRING_SOON   // Vencendo em breve
+  EXPIRED         // Vencido
+  OVERSTOCK       // Estoque excessivo
+}
+
+// Módulo de Segurança e Auditoria
+model AuditLog {
+  id              String   @id @default(cuid())
+  userId          String?  // ID do usuário que executou a ação
+  sessionId       String?  // ID da sessão
+  action          AuditAction
+  resource        String   // Recurso afetado (users, appointments, etc.)
+  resourceId      String?  // ID específico do recurso
+  method          String   // HTTP method (GET, POST, PUT, DELETE)
+  endpoint        String   // Endpoint acessado
+  ipAddress       String   // IP do cliente
+  userAgent       String?  // User agent
+  oldValues       Json?    // Valores antes da alteração
+  newValues       Json?    // Novos valores
+  metadata        Json?    // Dados adicionais contextuais
+  severity        AuditSeverity @default(INFO)
+  success         Boolean  // Se a ação foi bem-sucedida
+  errorMessage    String?  // Mensagem de erro (se houver)
+  duration        Int?     // Duração da operação em ms
+  createdAt       DateTime @default(now())
+
+  // Relacionamentos
+  user            User?    @relation(fields: [userId], references: [id])
+  session         UserSession? @relation(fields: [sessionId], references: [id])
+}
+
+model SecurityEvent {
+  id              String   @id @default(cuid())
+  userId          String?  // Usuário relacionado (se aplicável)
+  sessionId       String?  // Sessão relacionada
+  eventType       SecurityEventType
+  severity        SecuritySeverity @default(MEDIUM)
+  description     String   // Descrição do evento
+  ipAddress       String   // IP origem
+  userAgent       String?  // User agent
+  location        Json?    // Localização geográfica (se disponível)
+  metadata        Json?    // Dados adicionais
+  resolved        Boolean  @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?  // ID do usuário que resolveu
+  notes           String?  // Notas sobre a resolução
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  user            User?    @relation(fields: [userId], references: [id])
+  session         UserSession? @relation(fields: [sessionId], references: [id])
+  resolver        User?    @relation("SecurityEventResolver", fields: [resolvedBy], references: [id])
+}
+
+model UserSession {
+  id              String   @id @default(cuid())
+  userId          String
+  sessionToken    String   @unique // Hash do token de sessão
+  refreshToken    String?  @unique // Hash do refresh token
+  ipAddress       String   // IP de origem
+  userAgent       String?  // User agent
+  location        Json?    // Localização geográfica
+  isActive        Boolean  @default(true)
+  lastActivity    DateTime @default(now())
+  expiresAt       DateTime // Data de expiração
+  terminatedAt    DateTime? // Data de término manual
+  terminatedBy    String?  // Quem terminou a sessão
+  loginMethod     LoginMethod @default(EMAIL_PASSWORD)
+  deviceFingerprint String? // Impressão digital do dispositivo
+  trusted         Boolean  @default(false) // Dispositivo confiável
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  terminator      User?    @relation("SessionTerminator", fields: [terminatedBy], references: [id])
+  auditLogs       AuditLog[]
+  securityEvents  SecurityEvent[]
+  apiUsage        ApiUsage[]
+}
+
+model PasswordHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  passwordHash    String   // Hash da senha anterior
+  createdAt       DateTime @default(now())
+
+  // Relacionamentos
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoginAttempt {
+  id              String   @id @default(cuid())
+  email           String   // Email usado na tentativa
+  success         Boolean  // Se foi bem-sucedida
+  ipAddress       String   // IP origem
+  userAgent       String?  // User agent
+  failureReason   String?  // Motivo da falha
+  userId          String?  // ID do usuário (se login bem-sucedido)
+  blocked         Boolean  @default(false) // Se está bloqueado
+  createdAt       DateTime @default(now())
+
+  // Relacionamentos
+  user            User?    @relation(fields: [userId], references: [id])
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+}
+
+model ApiUsage {
+  id              String   @id @default(cuid())
+  userId          String?  // Usuário que fez a requisição
+  sessionId       String?  // Sessão relacionada
+  endpoint        String   // Endpoint acessado
+  method          String   // HTTP method
+  ipAddress       String   // IP origem
+  userAgent       String?  // User agent
+  statusCode      Int      // Código de resposta HTTP
+  responseTime    Int      // Tempo de resposta em ms
+  requestSize     Int?     // Tamanho da requisição em bytes
+  responseSize    Int?     // Tamanho da resposta em bytes
+  rateLimited     Boolean  @default(false) // Se foi limitado por rate limiting
+  createdAt       DateTime @default(now())
+
+  // Relacionamentos
+  user            User?    @relation(fields: [userId], references: [id])
+  session         UserSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([endpoint, createdAt])
+  @@index([ipAddress, createdAt])
+}
+
+model SecurityConfiguration {
+  id              String   @id @default(cuid())
+  key             String   @unique // Chave de configuração
+  value           String   // Valor da configuração
+  description     String?  // Descrição da configuração
+  category        SecurityConfigCategory
+  sensitive       Boolean  @default(false) // Se é um valor sensível
+  updatedBy       String   // Usuário que atualizou
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  updater         User     @relation(fields: [updatedBy], references: [id])
+}
+
+
+
+// Enums para segurança
+enum AuditAction {
+  CREATE          // Criação de recurso
+  READ            // Leitura de recurso
+  UPDATE          // Atualização de recurso
+  DELETE          // Exclusão de recurso
+  LOGIN           // Login de usuário
+  LOGOUT          // Logout de usuário
+  PASSWORD_CHANGE // Alteração de senha
+  PERMISSION_CHANGE // Alteração de permissões
+  SESSION_START   // Início de sessão
+  SESSION_END     // Fim de sessão
+  EXPORT          // Exportação de dados
+  IMPORT          // Importação de dados
+  BACKUP          // Backup de dados
+  RESTORE         // Restauração de dados
+  CONFIG_CHANGE   // Alteração de configuração
+  SYSTEM_ACCESS   // Acesso ao sistema
+  DATA_ACCESS     // Acesso a dados sensíveis
+  ADMIN_ACTION    // Ação administrativa
+}
+
+enum AuditSeverity {
+  LOW             // Baixa
+  INFO            // Informativo
+  MEDIUM          // Média
+  HIGH            // Alta
+  CRITICAL        // Crítica
+}
+
+enum SecurityEventType {
+  FAILED_LOGIN           // Tentativa de login falhada
+  MULTIPLE_FAILED_LOGINS // Múltiplas tentativas de login falhadas
+  BRUTE_FORCE_ATTEMPT    // Tentativa de força bruta
+  SUSPICIOUS_ACTIVITY    // Atividade suspeita
+  UNAUTHORIZED_ACCESS    // Acesso não autorizado
+  PRIVILEGE_ESCALATION   // Escalação de privilégios
+  DATA_BREACH            // Violação de dados
+  MALWARE_DETECTED       // Malware detectado
+  SUSPICIOUS_IP          // IP suspeito
+  ACCOUNT_LOCKOUT        // Bloqueio de conta
+  PASSWORD_POLICY_VIOLATION // Violação de política de senha
+  SESSION_HIJACK         // Sequestro de sessão
+  CSRF_ATTEMPT           // Tentativa de CSRF
+  SQL_INJECTION          // Tentativa de SQL injection
+  XSS_ATTEMPT            // Tentativa de XSS
+  RATE_LIMIT_EXCEEDED    // Limite de taxa excedido
+  UNUSUAL_LOGIN_LOCATION // Login de localização incomum
+  UNUSUAL_LOGIN_TIME     // Login em horário incomum
+  CONCURRENT_SESSIONS    // Sessões concorrentes
+  ADMIN_ACCESS           // Acesso administrativo
+}
+
+enum SecuritySeverity {
+  LOW          // Baixa
+  MEDIUM       // Média
+  HIGH         // Alta
+  CRITICAL     // Crítica
+}
+
+enum LoginMethod {
+  EMAIL_PASSWORD    // Email e senha
+  TWO_FACTOR        // Autenticação de dois fatores
+  SSO               // Single Sign-On
+  BIOMETRIC         // Biométrico
+  TOKEN             // Token de acesso
+}
+
+enum SecurityConfigCategory {
+  AUTHENTICATION   // Autenticação
+  AUTHORIZATION    // Autorização
+  SESSION          // Sessão
+  PASSWORD         // Senha
+  RATE_LIMITING    // Limitação de taxa
+  ENCRYPTION       // Criptografia
+  LOGGING          // Logging
+  BACKUP           // Backup
+  MONITORING       // Monitoramento
+  COMPLIANCE       // Conformidade
+}
+
+// ===== MÓDULO 9: INTEGRAÇÃO COM SISTEMAS EXTERNOS =====
+
+model IntegrationConfiguration {
+  id          String   @id @default(cuid())
+  type        IntegrationType
+  provider    String
+  credentials Json     // Credenciais criptografadas
+  settings    Json     // Configurações da integração
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([type, provider])
+}
+
+model IntegrationLog {
+  id        String   @id @default(cuid())
+  type      String   // Tipo da integração (PAYMENT, CRM, etc.)
+  status    String   // SUCCESS, ERROR, PARTIAL
+  details   Json     // Detalhes da operação
+  createdAt DateTime @default(now())
+}
+
+model PaymentTransactionLog {
+  id                    String   @id @default(cuid())
+  paymentId             String
+  gateway               String   // Nome do gateway (stripe, mercadopago, etc.)
+  gatewayTransactionId  String?  // ID da transação no gateway
+  requestData           Json     // Dados da requisição
+  responseData          Json     // Dados da resposta
+  status                String   // Status da transação
+  transactionType       String?  // PAYMENT, REFUND, etc.
+  amount                Decimal  @db.Decimal(10, 2)
+  currency              String
+  createdAt             DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+enum IntegrationType {
+  PAYMENT
+  ACCOUNTING
+  CRM
+  WEBHOOK
+}
+
+// ===== MÓDULO 10: GESTÃO DE CONVÊNIOS E DESCONTOS =====
+
+model HealthPlan {
+  id          String   @id @default(cuid())
+  name        String   // Nome da operadora
+  planType    String   // Tipo do plano (individual, familiar, empresarial)
+  operatorCode String  // Código da operadora
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  agreements  Agreement[]
+  coverageLimits CoverageLimit[]
+  operatorIntegrations OperatorIntegration[]
+}
+
+model Agreement {
+  id          String   @id @default(cuid())
+  healthPlanId String
+  clientId    String
+  agreementNumber String // Número do convênio
+  cardNumber  String?   // Número do cartão
+  validity    DateTime? // Data de validade
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relacionamentos
+  healthPlan  HealthPlan @relation(fields: [healthPlanId], references: [id], onDelete: Cascade)
+  client      Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  discounts   AgreementDiscount[]
+  payments    AgreementPayment[]
+  coverageAlerts CoverageAlert[]
+}
+
+model AgreementDiscount {
+  id          String   @id @default(cuid())
+  agreementId String
+  serviceId   String?
+  packageId   String?
+  discountPercentage Decimal @db.Decimal(5, 2) // Percentual de desconto (0-100)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  agreement   Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  service     Service?  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  package     ServicePackage? @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([agreementId, serviceId, packageId])
+}
+
+model CoverageLimit {
+  id          String   @id @default(cuid())
+  healthPlanId String
+  serviceId   String?
+  packageId   String?
+  limitAmount Decimal  @db.Decimal(10, 2) // Valor limite de cobertura
+  limitType   LimitType // Tipo de limite (por sessão, mensal, anual)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relacionamentos
+  healthPlan  HealthPlan @relation(fields: [healthPlanId], references: [id], onDelete: Cascade)
+  service     Service?   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  package     ServicePackage? @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([healthPlanId, serviceId, packageId])
+}
+
+model AgreementPayment {
+  id          String   @id @default(cuid())
+  agreementId String
+  paymentId   String
+  amountCovered Decimal @db.Decimal(10, 2) // Valor coberto pelo convênio
+  amountClient Decimal  @db.Decimal(10, 2) // Valor pago pelo cliente
+  discountApplied Decimal @db.Decimal(10, 2) // Desconto aplicado
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relacionamentos
+  agreement   Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  payment     Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model CoverageAlert {
+  id          String   @id @default(cuid())
+  agreementId String
+  serviceId   String?
+  packageId   String?
+  alertType   AlertType
+  message     String
+  isResolved  Boolean   @default(false)
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relacionamentos
+  agreement   Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  service     Service?  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  package     ServicePackage? @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+model OperatorIntegration {
+  id          String   @id @default(cuid())
+  healthPlanId String
+  integrationType String // API, WEBHOOK, EMAIL, etc.
+  endpoint    String?   // URL do endpoint
+  credentials Json?     // Credenciais criptografadas
+  settings    Json?     // Configurações da integração
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relacionamentos
+  healthPlan  HealthPlan @relation(fields: [healthPlanId], references: [id], onDelete: Cascade)
+}
+
+enum LimitType {
+  PER_SESSION  // Por sessão
+  MONTHLY      // Mensal
+  ANNUAL       // Anual
+  LIFETIME     // Vitalício
+}
+
+enum AlertType {
+  LIMIT_EXCEEDED    // Limite excedido
+  EXPIRING_SOON     // Expirando em breve
+  INVALID_AGREEMENT // Convênio inválido
+  COVERAGE_DENIED   // Cobertura negada
+  PAYMENT_DELAYED   // Pagamento atrasado
 }
