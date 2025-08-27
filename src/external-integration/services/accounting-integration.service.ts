@@ -242,7 +242,8 @@ export class AccountingIntegrationService {
                 return { success: false, message: 'Nenhum sistema de contabilidade configurado' };
             }
 
-            const results = [];
+            const results: any[] = [];
+
             for (const config of configs) {
                 try {
                     const result = await this.testAccountingConnection(config);

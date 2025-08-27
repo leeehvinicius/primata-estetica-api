@@ -97,10 +97,8 @@ export class ApiIntegrationService {
             const batches = this.chunkArray(syncConfig.data, batchSize);
 
             const results = {
-                total: syncConfig.data.length,
-                successful: 0,
-                failed: 0,
-                errors: [],
+                success: [] as any[],
+                errors: [] as any[],
             };
 
             for (let i = 0; i < batches.length; i++) {

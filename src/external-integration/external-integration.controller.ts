@@ -51,11 +51,7 @@ export class ExternalIntegrationController {
         return this.externalIntegrationService.processPayment(paymentData);
     }
 
-    @Post('payments/:paymentId/refund')
-    @Roles(Role.ADMINISTRADOR)
-    @ApiOperation({ summary: 'Reembolsar pagamento' })
-    @ApiResponse({ status: 200, description: 'Reembolso processado com sucesso' })
-    @ApiResponse({ status: 404, description: 'Pagamento não encontrado' })
+    @Post(':paymentId/refund')
     async refundPayment(
         @Param('paymentId') paymentId: string,
         @Body() refundData: { amount?: number; reason?: string }

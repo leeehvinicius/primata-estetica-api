@@ -30,18 +30,18 @@ export class WebhookService {
 
             const webhookData = this.preparePaymentWebhookData(paymentId, paymentData);
 
-            const results = [];
+            const results: any[] = [];
             for (const config of webhookConfigs) {
                 try {
                     const result = await this.sendWebhook(config, webhookData);
                     results.push({
-                        url: config.settings.url,
+                        url: config.settings?.url,
                         success: true,
                         response: result,
                     });
                 } catch (error) {
                     results.push({
-                        url: config.settings.url,
+                        url: config.settings?.url,
                         success: false,
                         error: error.message,
                     });
@@ -79,18 +79,18 @@ export class WebhookService {
 
             const webhookData = this.prepareAppointmentWebhookData(appointmentId, appointmentData, event);
 
-            const results = [];
+            const results: any[] = [];
             for (const config of webhookConfigs) {
                 try {
                     const result = await this.sendWebhook(config, webhookData);
                     results.push({
-                        url: config.settings.url,
+                        url: config.settings?.url,
                         success: true,
                         response: result,
                     });
                 } catch (error) {
                     results.push({
-                        url: config.settings.url,
+                        url: config.settings?.url,
                         success: false,
                         error: error.message,
                     });
@@ -128,18 +128,18 @@ export class WebhookService {
 
             const webhookData = this.prepareClientWebhookData(clientId, clientData, event);
 
-            const results = [];
+            const results: any[] = [];
             for (const config of webhookConfigs) {
                 try {
                     const result = await this.sendWebhook(config, webhookData);
                     results.push({
-                        url: config.settings.url,
+                        url: config.settings?.url,
                         success: true,
                         response: result,
                     });
                 } catch (error) {
                     results.push({
-                        url: config.settings.url,
+                        url: config.settings?.url,
                         success: false,
                         error: error.message,
                     });
@@ -182,18 +182,18 @@ export class WebhookService {
                 data,
             };
 
-            const results = [];
+            const results: any[] = [];
             for (const config of webhookConfigs) {
                 try {
                     const result = await this.sendWebhook(config, webhookData);
                     results.push({
-                        url: config.settings.url,
+                        url: config.settings?.url,
                         success: true,
                         response: result,
                     });
                 } catch (error) {
                     results.push({
-                        url: config.settings.url,
+                        url: config.settings?.url,
                         success: false,
                         error: error.message,
                     });

@@ -235,7 +235,8 @@ export class PaymentIntegrationService {
                 return { success: false, message: 'Nenhum gateway configurado' };
             }
 
-            const results = [];
+            const results: any[] = [];
+
             for (const config of configs) {
                 try {
                     const result = await this.testGatewayConnection(config);

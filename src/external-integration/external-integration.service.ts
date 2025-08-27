@@ -37,14 +37,20 @@ export class ExternalIntegrationService {
             // Criar registro de pagamento no banco
             const payment = await this.prisma.payment.create({
                 data: {
-                    amount: paymentData.amount,
-                    // currency: paymentData.currency, // Removed - not in Payment model
-                    description: paymentData.description,
-                    status: 'PENDING',
-                    paymentMethod: paymentData.paymentMethod as any,
                     clientId: paymentData.clientId,
+                    serviceId: paymentData.serviceId || 'default-service-id', // Você precisa definir um serviceId padrão
                     appointmentId: paymentData.appointmentId,
-                    metadata: paymentData.metadata,
+                    amount: paymentData.amount,
+                    discountAmount: 0, // Valor padrão
+                    finalAmount: paymentData.amount,
+                    paymentMethod: paymentData.paymentMethod as any, // Cast para o enum correto
+                    paymentStatus: 'PENDING', // Status padrão
+                    paymentDate: new Date(),
+                    dueDate: new Date(),
+                    notes: paymentData.description || null,
+                    transactionId: null,
+                    receiptNumber: null,
+                    createdBy: 'system', // Você precisa definir quem está criando
                 },
             });
 

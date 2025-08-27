@@ -194,7 +194,6 @@ export class CoverageAlertService {
   async resolve(id: string) {
     return this.update(id, { 
       isResolved: true,
-      resolvedAt: new Date(),
     });
   }
 
@@ -319,7 +318,7 @@ export class CoverageAlertService {
       },
     });
 
-    const alertsCreated = [];
+    const alertsCreated: any[] = [];
 
     for (const agreement of expiringAgreements) {
       // Só cria alerta se não existir um alerta ativo para este convênio
@@ -359,7 +358,7 @@ export class CoverageAlertService {
       },
     });
 
-    const alertsCreated = [];
+    const alertsCreated: any[] = [];
 
     for (const agreement of expiredAgreements) {
       // Só cria alerta se não existir um alerta ativo para este convênio

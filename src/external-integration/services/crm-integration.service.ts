@@ -129,9 +129,9 @@ export class CrmIntegrationService {
             // Buscar contatos do CRM
             const crmContacts = await this.fetchContactsFromCrm(filters, crmConfig);
 
-            const imported = [];
-            const updated = [];
-            const errors = [];
+            const imported: any[] = [];
+            const updated: any[] = [];
+            const errors: any[] = [];
 
             for (const contact of crmContacts) {
                 try {

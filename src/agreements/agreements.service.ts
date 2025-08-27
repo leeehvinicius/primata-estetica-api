@@ -191,13 +191,14 @@ export class AgreementsService {
     const payments = await this.agreementPaymentService.findByClientId(clientId);
     
     return {
-      client: agreements[0]?.client,
       agreements,
-      totalPayments: payments.length,
-      totalAmountCovered: payments.reduce((sum, payment) => sum + Number(payment.amountCovered), 0),
-      totalAmountClient: payments.reduce((sum, payment) => sum + Number(payment.amountClient), 0),
-      totalDiscounts: payments.reduce((sum, payment) => sum + Number(payment.discountApplied), 0),
-      payments,
+      total: agreements.length,
+      page: 1,
+      limit: agreements.length,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+      client: agreements[0]?.clientId,
     };
   }
 
