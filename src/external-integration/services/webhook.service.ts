@@ -4,6 +4,27 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
 
+interface WebhookSettings {
+    url?: string;
+    types?: string[];
+    headers?: Record<string, string>;
+    customHeaders?: Record<string, string>;
+    timeout?: number;
+    retryAttempts?: number;
+}
+
+interface WebhookConfig {
+    id: string;
+    type: string;
+    provider: string;
+    settings: WebhookSettings;
+    isActive: boolean;
+    credentials?: {
+        apiKey?: string;
+        bearerToken?: string;
+    };
+}
+
 @Injectable()
 export class WebhookService {
     private readonly logger = new Logger(WebhookService.name);
@@ -267,9 +288,21 @@ export class WebhookService {
             const configs = await this.prisma.integrationConfiguration.findMany({
                 where: { type: 'WEBHOOK', isActive: true },
             });
+            
+            const typedConfigs = configs.map(config => ({
+                ...config,
+                settings: config.settings as WebhookSettings,
+                credentials: config.credentials as WebhookConfig['credentials']
+            }));
 
-            const status = [];
-            for (const config of configs) {
+            const status: Array<{
+                url?: string;
+                status: string;
+                lastTest: Date;
+                details?: any;
+                error?: string;
+            }> = [];
+            for (const config of typedConfigs) {
                 try {
                     const testResult = await this.testWebhookConnection(config);
                     status.push({
@@ -312,8 +345,19 @@ export class WebhookService {
                 return { success: false, message: 'Nenhum webhook configurado' };
             }
 
-            const results = [];
-            for (const config of configs) {
+            const typedConfigs = configs.map(config => ({
+                ...config,
+                settings: config.settings as WebhookSettings,
+                credentials: config.credentials as WebhookConfig['credentials']
+            }));
+
+            const results: Array<{
+                url?: string;
+                success: boolean;
+                details?: any;
+                error?: string;
+            }> = [];
+            for (const config of typedConfigs) {
                 try {
                     const result = await this.testWebhookConnection(config);
                     results.push({
@@ -343,7 +387,7 @@ export class WebhookService {
     // ===== MÉTODOS PRIVADOS =====
 
     private async getWebhookConfigs(type: string) {
-        return await this.prisma.integrationConfiguration.findMany({
+        const configs = await this.prisma.integrationConfiguration.findMany({
             where: {
                 type: 'WEBHOOK',
                 isActive: true,
@@ -353,6 +397,12 @@ export class WebhookService {
                 },
             },
         });
+        
+        return configs.map(config => ({
+            ...config,
+            settings: config.settings as WebhookSettings,
+            credentials: config.credentials as WebhookConfig['credentials']
+        }));
     }
 
     private preparePaymentWebhookData(paymentId: string, paymentData: any) {
@@ -424,9 +474,13 @@ export class WebhookService {
         return response.data;
     }
 
-    private async testWebhookConnection(config: any) {
+    private async testWebhookConnection(config: WebhookConfig) {
         const headers = this.buildWebhookHeaders(config);
         const url = config.settings.url;
+
+        if (!url) {
+            throw new Error('URL do webhook não configurada');
+        }
 
         const testData = {
             type: 'TEST',
@@ -448,7 +502,7 @@ export class WebhookService {
         return response.data;
     }
 
-    private buildWebhookHeaders(config: any) {
+    private buildWebhookHeaders(config: WebhookConfig) {
         const headers: any = {
             'Content-Type': 'application/json',
             'User-Agent': 'PrimataEstetica-Webhook/1.0',
@@ -524,7 +578,7 @@ export class WebhookService {
             await this.prisma.payment.update({
                 where: { id: data.paymentId },
                 data: {
-                    status: data.status,
+                    paymentStatus: data.status,
                     updatedAt: new Date(),
                 },
             });

@@ -58,8 +58,7 @@ export class ExternalIntegrationController {
     ) {
         return this.externalIntegrationService.refundPayment(
             paymentId,
-            refundData.amount,
-            refundData.reason
+            refundData.amount
         );
     }
 

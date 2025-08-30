@@ -4,6 +4,32 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
 
+// Interfaces para tipar os campos Json do IntegrationConfiguration
+interface AccountingSettings {
+    autoExport?: boolean;
+    baseUrl?: string;
+    apiVersion?: string;
+    timeout?: number;
+    [key: string]: any;
+}
+
+interface AccountingCredentials {
+    apiKey?: string;
+    username?: string;
+    password?: string;
+    clientId?: string;
+    [key: string]: any;
+}
+
+interface AccountingConfig {
+    id: string;
+    type: string;
+    provider: string;
+    settings: AccountingSettings;
+    credentials: AccountingCredentials;
+    isActive: boolean;
+}
+
 @Injectable()
 export class AccountingIntegrationService {
     private readonly logger = new Logger(AccountingIntegrationService.name);
@@ -48,7 +74,7 @@ export class AccountingIntegrationService {
             }
 
             // Enviar para sistema de contabilidade se configurado
-            if (accountingConfig.settings.autoExport) {
+            if (accountingConfig.settings?.autoExport) {
                 await this.exportToAccountingSystem(report, format, accountingConfig);
             }
 
@@ -137,13 +163,13 @@ export class AccountingIntegrationService {
                         gte: period.startDate,
                         lte: period.endDate,
                     },
-                    status: 'COMPLETED',
+                    paymentStatus: 'COMPLETED' as any,
                 },
                 include: {
                     client: true,
                     appointment: {
                         include: {
-                            services: true,
+                            service: true,
                         },
                     },
                 },
@@ -198,7 +224,13 @@ export class AccountingIntegrationService {
                 where: { type: 'ACCOUNTING', isActive: true },
             });
 
-            const status = [];
+            const status: Array<{
+                provider: string;
+                status: string;
+                lastTest: Date;
+                details?: any;
+                error?: string;
+            }> = [];
             for (const config of configs) {
                 try {
                     const testResult = await this.testAccountingConnection(config);
@@ -242,7 +274,12 @@ export class AccountingIntegrationService {
                 return { success: false, message: 'Nenhum sistema de contabilidade configurado' };
             }
 
-            const results: any[] = [];
+            const results: Array<{
+                provider: string;
+                success: boolean;
+                details?: any;
+                error?: string;
+            }> = [];
 
             for (const config of configs) {
                 try {
@@ -273,13 +310,26 @@ export class AccountingIntegrationService {
 
     // ===== MÉTODOS PRIVADOS =====
 
-    private async getAccountingConfig() {
-        return await this.prisma.integrationConfiguration.findFirst({
+    private async getAccountingConfig(): Promise<AccountingConfig | null> {
+        const config = await this.prisma.integrationConfiguration.findFirst({
             where: {
                 type: 'ACCOUNTING',
                 isActive: true,
             },
         });
+
+        if (!config) {
+            return null;
+        }
+
+        return {
+            id: config.id,
+            type: config.type,
+            provider: config.provider,
+            settings: config.settings as AccountingSettings,
+            credentials: config.credentials as AccountingCredentials,
+            isActive: config.isActive,
+        };
     }
 
     private processPaymentData(payments: any[]) {
@@ -288,20 +338,24 @@ export class AccountingIntegrationService {
             date: payment.createdAt,
             amount: payment.amount,
             currency: payment.currency,
-            description: payment.description,
-            status: payment.status,
+            description: payment.notes || '',
+            status: payment.paymentStatus,
             paymentMethod: payment.paymentMethod,
             clientId: payment.clientId,
             clientName: payment.client?.name,
             clientEmail: payment.client?.email,
             appointmentId: payment.appointmentId,
             appointmentDate: payment.appointment?.scheduledDate,
-            services: payment.appointment?.services?.map((service: any) => ({
-                id: service.id,
-                name: service.name,
-                price: service.price,
-            })),
-            metadata: payment.metadata,
+            service: payment.appointment?.service ? {
+                id: payment.appointment.service.id,
+                name: payment.appointment.service.name,
+                price: payment.appointment.service.price,
+            } : null,
+            metadata: {
+                transactionId: payment.transactionId,
+                externalPaymentId: payment.externalPaymentId,
+                receiptNumber: payment.receiptNumber,
+            },
         }));
     }
 
@@ -320,8 +374,8 @@ export class AccountingIntegrationService {
             payment.date,
             payment.amount,
             payment.currency,
-            `"${payment.description}"`,
-            payment.status,
+            `"${payment.description || ''}"`,
+            payment.paymentStatus,
             payment.paymentMethod,
             `"${payment.clientName || ''}"`,
             payment.clientEmail || '',
@@ -342,8 +396,8 @@ export class AccountingIntegrationService {
                 <date>${payment.date}</date>
                 <amount>${payment.amount}</amount>
                 <currency>${payment.currency}</currency>
-                <description>${this.escapeXml(payment.description)}</description>
-                <status>${payment.status}</status>
+                <description>${this.escapeXml(payment.description || '')}</description>
+                <status>${payment.paymentStatus}</status>
                 <paymentMethod>${payment.paymentMethod}</paymentMethod>
                 <client>
                     <id>${payment.clientId}</id>
@@ -369,20 +423,7 @@ export class AccountingIntegrationService {
         };
     }
 
-    private async exportToAccountingSystem(data: any, format: string, config: any) {
-        const headers = this.buildAccountingHeaders(config);
-        const url = this.buildAccountingUrl(config, 'export');
 
-        const response = await firstValueFrom(
-            this.http.post(url, {
-                data,
-                format,
-                timestamp: new Date().toISOString(),
-            }, { headers })
-        );
-
-        return response.data;
-    }
 
     private async testAccountingConnection(config: any) {
         const headers = this.buildAccountingHeaders(config);

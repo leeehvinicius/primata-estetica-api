@@ -27,6 +27,7 @@ export class ExternalIntegrationService {
         currency: string;
         description: string;
         clientId: string;
+        serviceId?: string;
         appointmentId?: string;
         paymentMethod: string;
         metadata?: any;

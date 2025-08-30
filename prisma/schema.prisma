@@ -91,6 +91,7 @@ model Client {
   emergencyContact String?
   emergencyPhone   String?
   notes       String?  // Observações gerais
+  lastCrmSync DateTime? // Última sincronização com CRM
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -404,13 +405,17 @@ model Payment {
   amount          Decimal  @db.Decimal(10, 2)
   discountAmount  Decimal  @db.Decimal(10, 2) @default(0)
   finalAmount     Decimal  @db.Decimal(10, 2)
+  currency        String   @default("BRL") // Moeda do pagamento
   paymentMethod   PaymentMethod
   paymentStatus   PaymentStatus @default(PENDING)
   paymentDate     DateTime @default(now())
   dueDate         DateTime?
   notes           String?  // Observações do pagamento
   transactionId   String?  // ID da transação externa
+  externalPaymentId String? // ID externo do pagamento no gateway
   receiptNumber   String?  // Número do recibo
+  refundedAt      DateTime? // Data do reembolso
+  refundAmount    Decimal?  @db.Decimal(10, 2) // Valor reembolsado
   createdBy       String   // ID do usuário que criou
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

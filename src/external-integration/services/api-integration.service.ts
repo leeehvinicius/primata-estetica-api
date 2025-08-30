@@ -4,6 +4,33 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
 
+// Interfaces para tipar os campos Json do IntegrationConfiguration
+interface ApiSettings {
+    baseUrl?: string;
+    healthEndpoint?: string;
+    testEndpoint?: string;
+    timeout?: number;
+    retryAttempts?: number;
+    [key: string]: any;
+}
+
+interface ApiCredentials {
+    apiKey?: string;
+    authorization?: string;
+    clientId?: string;
+    clientSecret?: string;
+    [key: string]: any;
+}
+
+interface ApiConfig {
+    id: string;
+    type: string;
+    provider: string;
+    settings: ApiSettings;
+    credentials: ApiCredentials;
+    isActive: boolean;
+}
+
 @Injectable()
 export class ApiIntegrationService {
     private readonly logger = new Logger(ApiIntegrationService.name);
@@ -38,7 +65,11 @@ export class ApiIntegrationService {
             }
 
             // Construir URL completa
-            const baseUrl = integrationConfig.settings.baseUrl;
+            const settings = integrationConfig.settings as ApiSettings;
+            const baseUrl = settings.baseUrl;
+            if (!baseUrl) {
+                throw new Error('Base URL não configurada para esta integração');
+            }
             const url = `${baseUrl}${config.endpoint}`;
 
             // Construir headers
@@ -98,6 +129,8 @@ export class ApiIntegrationService {
 
             const results = {
                 success: [] as any[],
+                successful: 0,
+                failed: 0,
                 errors: [] as any[],
             };
 
@@ -204,6 +237,8 @@ export class ApiIntegrationService {
      */
     async checkApiStatus(integrationId: string) {
         try {
+            const startTime = Date.now();
+            
             const integrationConfig = await this.prisma.integrationConfiguration.findUnique({
                 where: { id: integrationId },
             });
@@ -216,13 +251,13 @@ export class ApiIntegrationService {
             const testResponse = await this.makeApiRequest({
                 integrationId,
                 method: 'GET',
-                endpoint: integrationConfig.settings.healthEndpoint || '/health',
+                endpoint: (integrationConfig.settings as ApiSettings)?.healthEndpoint || '/health',
             });
 
             return {
                 success: true,
                 status: 'ONLINE',
-                responseTime: testResponse.responseTime,
+                responseTime: Date.now() - startTime,
                 lastCheck: new Date(),
                 details: testResponse.data,
             };
@@ -254,7 +289,7 @@ export class ApiIntegrationService {
             const testResponse = await this.makeApiRequest({
                 integrationId,
                 method: 'GET',
-                endpoint: integrationConfig.settings.testEndpoint || '/',
+                endpoint: (integrationConfig.settings as ApiSettings)?.testEndpoint || '/',
             });
 
             return {
@@ -411,19 +446,20 @@ export class ApiIntegrationService {
         const results = {
             successful: 0,
             failed: 0,
-            errors: [],
+            errors: [] as Array<{ item: string; error: string; }>,
         };
 
         for (const item of batch) {
             try {
-                const endpoint = this.buildEndpoint(integrationConfig.settings.endpoints, dataType, syncMode);
+                const settings = integrationConfig.settings as ApiSettings;
+                const endpoint = this.buildEndpoint(settings.endpoints, dataType, syncMode);
                 
                 const method = syncMode === 'CREATE' ? 'POST' : 
                               syncMode === 'UPDATE' ? 'PUT' : 'POST';
 
                 const response = await this.makeHttpRequest(
                     method,
-                    `${integrationConfig.settings.baseUrl}${endpoint}`,
+                    `${settings.baseUrl}${endpoint}`,
                     item,
                     this.buildApiHeaders(integrationConfig)
                 );
@@ -466,11 +502,11 @@ export class ApiIntegrationService {
     }
 
     private async processImportedData(dataType: string, data: any[]) {
-        const results = {
-            imported: 0,
-            updated: 0,
-            errors: [],
-        };
+                    const results = {
+                imported: 0,
+                updated: 0,
+                errors: [] as Array<{ item: string; error: string; }>,
+            };
 
         for (const item of data) {
             try {

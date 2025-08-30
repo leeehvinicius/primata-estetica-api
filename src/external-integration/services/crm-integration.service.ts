@@ -4,6 +4,31 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
 
+// Interfaces para tipar os campos Json do IntegrationConfiguration
+interface CrmSettings {
+    baseUrl?: string;
+    apiVersion?: string;
+    timeout?: number;
+    [key: string]: any;
+}
+
+interface CrmCredentials {
+    apiKey?: string;
+    accessToken?: string;
+    clientId?: string;
+    clientSecret?: string;
+    [key: string]: any;
+}
+
+interface CrmConfig {
+    id: string;
+    type: string;
+    provider: string;
+    settings: CrmSettings;
+    credentials: CrmCredentials;
+    isActive: boolean;
+}
+
 @Injectable()
 export class CrmIntegrationService {
     private readonly logger = new Logger(CrmIntegrationService.name);
@@ -32,6 +57,9 @@ export class CrmIntegrationService {
             const crmData = this.prepareClientData(client);
 
             // Verificar se cliente já existe no CRM
+            if (!client.email) {
+                throw new Error('Cliente não possui email cadastrado');
+            }
             const existingContact = await this.findContactInCrm(client.email, crmConfig);
 
             if (existingContact) {
@@ -71,14 +99,14 @@ export class CrmIntegrationService {
                 include: {
                     appointments: {
                         include: {
-                            services: true,
+                            service: true,
                             payments: true,
                         },
                     },
                 },
             });
 
-            const results = [];
+            const results: Array<{ clientId: string; success: boolean; result?: any; error?: string; }> = [];
             for (const client of clients) {
                 try {
                     const result = await this.syncClient(client);
@@ -204,13 +232,16 @@ export class CrmIntegrationService {
             }
 
             // Buscar dados completos do CRM
+            if (!client.email) {
+                throw new Error('Cliente não possui email cadastrado');
+            }
             const crmData = await this.fetchContactDetailsFromCrm(client.email, crmConfig);
 
             return {
                 success: true,
                 clientId,
                 crmData,
-                lastSync: client.lastCrmSync,
+                lastSync: (client as any).lastCrmSync,
             };
         } catch (error) {
             this.logger.error(`Erro ao buscar cliente ${clientId} no CRM`, error);
@@ -227,7 +258,7 @@ export class CrmIntegrationService {
                 where: { type: 'CRM', isActive: true },
             });
 
-            const status = [];
+            const status: Array<{ provider: string; status: string; lastTest: Date; details?: any; error?: string; }> = [];
             for (const config of configs) {
                 try {
                     const testResult = await this.testCrmConnection(config);
@@ -271,7 +302,7 @@ export class CrmIntegrationService {
                 return { success: false, message: 'Nenhum sistema CRM configurado' };
             }
 
-            const results = [];
+            const results: Array<{ provider: string; success: boolean; details?: any; error?: string; }> = [];
             for (const config of configs) {
                 try {
                     const result = await this.testCrmConnection(config);
@@ -362,7 +393,7 @@ export class CrmIntegrationService {
 
     private async findContactInCrm(email: string, config: any) {
         const headers = this.buildCrmHeaders(config);
-        const url = this.buildCrmUrl(config, 'search', { email });
+        const url = this.buildCrmUrl(config, 'search', undefined, { email });
 
         try {
             const response = await firstValueFrom(
@@ -460,7 +491,7 @@ export class CrmIntegrationService {
 
     private async fetchContactsFromCrm(filters: any, config: any) {
         const headers = this.buildCrmHeaders(config);
-        const url = this.buildCrmUrl(config, 'contacts', null, filters);
+        const url = this.buildCrmUrl(config, 'contacts', undefined, filters);
 
         const response = await firstValueFrom(
             this.http.get(url, { headers })
@@ -471,7 +502,7 @@ export class CrmIntegrationService {
 
     private async fetchContactDetailsFromCrm(email: string, config: any) {
         const headers = this.buildCrmHeaders(config);
-        const url = this.buildCrmUrl(config, 'contacts', null, { email });
+        const url = this.buildCrmUrl(config, 'contacts', undefined, { email });
 
         const response = await firstValueFrom(
             this.http.get(url, { headers })
@@ -491,7 +522,7 @@ export class CrmIntegrationService {
                 city: crmContact.address?.city,
                 state: crmContact.address?.state,
                 zipCode: crmContact.address?.zipCode,
-                lastCrmSync: new Date(),
+                // lastCrmSync: new Date(), // Campo não existe no modelo Client
             },
         });
     }
@@ -506,7 +537,7 @@ export class CrmIntegrationService {
                 city: crmContact.address?.city,
                 state: crmContact.address?.state,
                 zipCode: crmContact.address?.zipCode,
-                lastCrmSync: new Date(),
+                // lastCrmSync: new Date(), // Campo não existe no modelo Client
             },
         });
     }
@@ -571,7 +602,7 @@ export class CrmIntegrationService {
                 const sfBaseUrl = settings.instanceUrl;
                 switch (action) {
                     case 'contacts': return id ? `${sfBaseUrl}/services/data/v52.0/sobjects/Contact/${id}` : `${sfBaseUrl}/services/data/v52.0/sobjects/Contact`;
-                    case 'search': return `${sfBaseUrl}/services/data/v52.0/query?q=SELECT+Id+FROM+Contact+WHERE+Email='${params.email}'`;
+                    case 'search': return `${sfBaseUrl}/services/data/v52.0/query?q=SELECT+Id+FROM+Contact+WHERE+Email='${params?.email || ''}'`;
                     case 'activities': return `${sfBaseUrl}/services/data/v52.0/sobjects/Task`;
                     case 'deals': return `${sfBaseUrl}/services/data/v52.0/sobjects/Opportunity`;
                     case 'test': return `${sfBaseUrl}/services/data/v52.0/sobjects/Contact`;
@@ -581,7 +612,7 @@ export class CrmIntegrationService {
                 const pdBaseUrl = `https://${settings.domain}.pipedrive.com/api/v1`;
                 switch (action) {
                     case 'contacts': return id ? `${pdBaseUrl}/persons/${id}` : `${pdBaseUrl}/persons`;
-                    case 'search': return `${pdBaseUrl}/persons/search?term=${params.email}`;
+                    case 'search': return `${pdBaseUrl}/persons/search?term=${params?.email || ''}`;
                     case 'activities': return `${pdBaseUrl}/activities`;
                     case 'deals': return `${pdBaseUrl}/deals`;
                     case 'test': return `${pdBaseUrl}/persons`;

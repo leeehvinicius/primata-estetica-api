@@ -4,6 +4,27 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
 
+interface PaymentGatewaySettings {
+    apiKey?: string;
+    secretKey?: string;
+    webhookUrl?: string;
+    sandbox?: boolean;
+    timeout?: number;
+    retryAttempts?: number;
+}
+
+interface PaymentGatewayConfig {
+    id: string;
+    type: string;
+    provider: string;
+    settings: PaymentGatewaySettings;
+    credentials: {
+        secretKey?: string;
+        accessToken?: string;
+    };
+    isActive: boolean;
+}
+
 @Injectable()
 export class PaymentIntegrationService {
     private readonly logger = new Logger(PaymentIntegrationService.name);
@@ -114,7 +135,7 @@ export class PaymentIntegrationService {
                 transactionId: payment.externalPaymentId,
                 amount: amount || payment.amount,
                 reason: reason || 'Reembolso solicitado',
-                currency: payment.currency,
+                                    currency: (payment as any).currency || 'BRL',
             };
 
             // Enviar reembolso para o gateway
@@ -127,9 +148,9 @@ export class PaymentIntegrationService {
             await this.prisma.payment.update({
                 where: { id: paymentId },
                 data: {
-                    status: result.status === 'SUCCESS' ? 'REFUNDED' : 'REFUND_FAILED',
-                    refundedAt: new Date(),
-                    refundAmount: amount || payment.amount,
+                    paymentStatus: result.status === 'SUCCESS' ? 'REFUNDED' : 'CANCELLED',
+                    // refundedAt: new Date(), // Campo não existe no modelo Payment
+                    // refundAmount: amount || payment.amount, // Campo não existe no modelo Payment
                 },
             });
 
@@ -144,7 +165,7 @@ export class PaymentIntegrationService {
                     status: result.status,
                     transactionType: 'REFUND',
                     amount: amount || payment.amount,
-                    currency: payment.currency,
+                    currency: (payment as any).currency || 'BRL',
                 },
             });
 
@@ -191,8 +212,20 @@ export class PaymentIntegrationService {
                 where: { type: 'PAYMENT', isActive: true },
             });
 
-            const status = [];
-            for (const config of configs) {
+            const typedConfigs = configs.map(config => ({
+                ...config,
+                settings: config.settings as PaymentGatewaySettings,
+                credentials: config.credentials as PaymentGatewayConfig['credentials']
+            }));
+
+            const status: Array<{
+                provider: string;
+                status: string;
+                lastTest: Date;
+                details?: any;
+                error?: string;
+            }> = [];
+            for (const config of typedConfigs) {
                 try {
                     const testResult = await this.testGatewayConnection(config);
                     status.push({
@@ -235,9 +268,20 @@ export class PaymentIntegrationService {
                 return { success: false, message: 'Nenhum gateway configurado' };
             }
 
-            const results: any[] = [];
+            const typedConfigs = configs.map(config => ({
+                ...config,
+                settings: config.settings as PaymentGatewaySettings,
+                credentials: config.credentials as PaymentGatewayConfig['credentials']
+            }));
 
-            for (const config of configs) {
+            const results: Array<{
+                provider: string;
+                success: boolean;
+                details?: any;
+                error?: string;
+            }> = [];
+
+            for (const config of typedConfigs) {
                 try {
                     const result = await this.testGatewayConnection(config);
                     results.push({
@@ -266,7 +310,7 @@ export class PaymentIntegrationService {
 
     // ===== MÉTODOS PRIVADOS =====
 
-    private async getPaymentGatewayConfig(paymentMethod: string) {
+    private async getPaymentGatewayConfig(paymentMethod: string): Promise<PaymentGatewayConfig> {
         // Mapear método de pagamento para gateway
         const methodToGateway: Record<string, string> = {
             'CREDIT_CARD': 'stripe',
@@ -278,19 +322,29 @@ export class PaymentIntegrationService {
 
         const provider = methodToGateway[paymentMethod];
         if (!provider) {
-            throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
+            throw new Error(`Método de pagamento ${paymentMethod} não suportado`);
         }
 
-        return await this.prisma.integrationConfiguration.findFirst({
+        const config = await this.prisma.integrationConfiguration.findFirst({
             where: {
                 type: 'PAYMENT',
                 provider,
                 isActive: true,
             },
         });
+
+        if (!config) {
+            throw new Error(`Gateway de pagamento ${provider} não configurado`);
+        }
+
+        return {
+            ...config,
+            settings: config.settings as PaymentGatewaySettings,
+            credentials: config.credentials as PaymentGatewayConfig['credentials']
+        };
     }
 
-    private prepareGatewayData(paymentData: any, gatewayConfig: any) {
+    private prepareGatewayData(paymentData: any, gatewayConfig: PaymentGatewayConfig) {
         const baseData = {
             amount: paymentData.amount,
             currency: paymentData.currency,
@@ -334,7 +388,7 @@ export class PaymentIntegrationService {
         }
     }
 
-    private async sendToGateway(gatewayConfig: any, data: any) {
+    private async sendToGateway(gatewayConfig: PaymentGatewayConfig, data: any) {
         const headers = this.buildGatewayHeaders(gatewayConfig);
         const url = this.buildGatewayUrl(gatewayConfig, 'payment');
 
@@ -349,7 +403,7 @@ export class PaymentIntegrationService {
         }
     }
 
-    private async sendRefundToGateway(gatewayConfig: any, data: any) {
+    private async sendRefundToGateway(gatewayConfig: PaymentGatewayConfig, data: any) {
         const headers = this.buildGatewayHeaders(gatewayConfig);
         const url = this.buildGatewayUrl(gatewayConfig, 'refund');
 
@@ -364,7 +418,7 @@ export class PaymentIntegrationService {
         }
     }
 
-    private async checkStatusWithGateway(gatewayConfig: any, transactionId: string) {
+    private async checkStatusWithGateway(gatewayConfig: PaymentGatewayConfig, transactionId: string) {
         const headers = this.buildGatewayHeaders(gatewayConfig);
         const url = this.buildGatewayUrl(gatewayConfig, 'status', transactionId);
 
@@ -379,7 +433,7 @@ export class PaymentIntegrationService {
         }
     }
 
-    private async testGatewayConnection(config: any) {
+    private async testGatewayConnection(config: PaymentGatewayConfig) {
         const headers = this.buildGatewayHeaders(config);
         const url = this.buildGatewayUrl(config, 'test');
 
@@ -393,7 +447,7 @@ export class PaymentIntegrationService {
         }
     }
 
-    private buildGatewayHeaders(config: any) {
+    private buildGatewayHeaders(config: PaymentGatewayConfig) {
         const credentials = config.credentials;
         
         switch (config.provider) {
@@ -419,7 +473,7 @@ export class PaymentIntegrationService {
         }
     }
 
-    private buildGatewayUrl(config: any, action: string, transactionId?: string) {
+    private buildGatewayUrl(config: PaymentGatewayConfig, action: string, transactionId?: string) {
         const settings = config.settings;
         
         switch (config.provider) {

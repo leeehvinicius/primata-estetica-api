@@ -3,6 +3,32 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
+// Interfaces para tipar os campos Json do OperatorIntegration
+interface OperatorCredentials {
+  apiKey?: string;
+  authorization?: string;
+  clientId?: string;
+  email?: string;
+  username?: string;
+  password?: string;
+  [key: string]: any;
+}
+
+interface OperatorSettings {
+  timeout?: number;
+  version?: string;
+  retryAttempts?: number;
+  baseUrl?: string;
+  [key: string]: any;
+}
+
+interface ValidationResult {
+  integrationId: string;
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
 @Injectable()
 export class OperatorIntegrationService {
   constructor(
@@ -352,24 +378,26 @@ export class OperatorIntegrationService {
 
     // Adiciona credenciais se configuradas
     if (integration.credentials) {
-      if (integration.credentials.apiKey) {
-        headers['X-API-Key'] = integration.credentials.apiKey;
+      const credentials = integration.credentials as OperatorCredentials;
+      if (credentials.apiKey) {
+        headers['X-API-Key'] = credentials.apiKey;
       }
-      if (integration.credentials.authorization) {
-        headers['Authorization'] = integration.credentials.authorization;
+      if (credentials.authorization) {
+        headers['Authorization'] = credentials.authorization;
       }
-      if (integration.credentials.clientId) {
-        headers['X-Client-ID'] = integration.credentials.clientId;
+      if (credentials.clientId) {
+        headers['X-Client-ID'] = credentials.clientId;
       }
     }
 
     // Adiciona configurações específicas
     if (integration.settings) {
-      if (integration.settings.timeout) {
-        headers['X-Timeout'] = integration.settings.timeout;
+      const settings = integration.settings as OperatorSettings;
+      if (settings.timeout) {
+        headers['X-Timeout'] = settings.timeout;
       }
-      if (integration.settings.version) {
-        headers['X-API-Version'] = integration.settings.version;
+      if (settings.version) {
+        headers['X-API-Version'] = settings.version;
       }
     }
 
@@ -424,7 +452,7 @@ export class OperatorIntegrationService {
   async validateIntegrationConfiguration(integrationId: string) {
     const integration = await this.findById(integrationId);
     
-    const validation = {
+    const validation: ValidationResult = {
       integrationId,
       isValid: true,
       errors: [],
@@ -452,7 +480,8 @@ export class OperatorIntegrationService {
           validation.isValid = false;
           validation.errors.push('Endpoint é obrigatório para integrações API');
         }
-        if (!integration.credentials?.apiKey && !integration.credentials?.authorization) {
+        const apiCredentials = integration.credentials as OperatorCredentials;
+        if (!apiCredentials?.apiKey && !apiCredentials?.authorization) {
           validation.warnings.push('Credenciais de autenticação recomendadas para APIs');
         }
         break;
@@ -465,7 +494,8 @@ export class OperatorIntegrationService {
         break;
 
       case 'EMAIL':
-        if (!integration.credentials?.email) {
+        const emailCredentials = integration.credentials as OperatorCredentials;
+        if (!emailCredentials?.email) {
           validation.warnings.push('Email de contato recomendado para integrações por email');
         }
         break;
