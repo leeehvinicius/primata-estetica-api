@@ -7,9 +7,10 @@ export class CreateAppointmentDto {
     @IsString()
     clientId: string;
 
-    @ApiProperty({ description: 'ID do profissional' })
+    @ApiProperty({ description: 'ID do profissional (opcional)', required: false })
+    @IsOptional()
     @IsString()
-    professionalId: string;
+    professionalId?: string;
 
     @ApiProperty({ description: 'ID do serviço' })
     @IsString()

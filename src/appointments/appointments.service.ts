@@ -9,6 +9,21 @@ export class AppointmentsService {
     constructor(private prisma: PrismaService) {}
 
     async create(dto: CreateAppointmentDto, userId: string) {
+        // Se userId não foi fornecido, buscar um usuário admin padrão
+        let createdBy = userId;
+        if (!createdBy) {
+            const adminUser = await (this.prisma as any).user.findFirst({
+                where: {
+                    profile: { role: 'ADMINISTRADOR' }
+                }
+            });
+            if (adminUser) {
+                createdBy = adminUser.id;
+            } else {
+                throw new ConflictException('Usuário não encontrado para criar o agendamento');
+            }
+        }
+
         // Verificar se o cliente existe
         const client = await (this.prisma as any).client.findUnique({
             where: { id: dto.clientId }
@@ -62,7 +77,7 @@ export class AppointmentsService {
             duration: service.duration,
             appointmentType: dto.appointmentType,
             priority: dto.priority || 'NORMAL',
-            createdBy: userId,
+            createdBy: createdBy,
         };
 
         if (dto.professionalId) {
@@ -591,6 +606,21 @@ export class AppointmentsService {
     }
 
     private async createAutomaticReminders(appointmentId: string, userId: string, channels?: string[]) {
+        // Se userId não foi fornecido, buscar um usuário admin padrão
+        let createdBy = userId;
+        if (!createdBy) {
+            const adminUser = await (this.prisma as any).user.findFirst({
+                where: {
+                    profile: { role: 'ADMINISTRADOR' }
+                }
+            });
+            if (adminUser) {
+                createdBy = adminUser.id;
+            } else {
+                throw new ConflictException('Usuário não encontrado para criar os lembretes');
+            }
+        }
+
         const appointment = await (this.prisma as any).appointment.findUnique({
             where: { id: appointmentId },
             include: {
@@ -630,7 +660,7 @@ export class AppointmentsService {
                     scheduledFor: reminder.scheduledFor,
                     message: reminder.message,
                     sentVia: defaultChannels,
-                    createdBy: userId,
+                    createdBy: createdBy,
                 }
             });
         }
