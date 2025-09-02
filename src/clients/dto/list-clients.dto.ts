@@ -39,6 +39,16 @@ export class ListClientsDto {
     @IsBoolean()
     isActive?: boolean;
 
+    @ApiProperty({ description: 'Filtrar por termos aceitos', required: false })
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
+    @IsBoolean()
+    termsAccepted?: boolean;
+
     @ApiProperty({ description: 'Ordenar por campo', required: false, default: 'createdAt' })
     @IsOptional()
     @IsString()

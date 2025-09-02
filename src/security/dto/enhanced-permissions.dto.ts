@@ -281,6 +281,64 @@ export const ENHANCED_ROLE_PERMISSIONS: Record<Role, EnhancedPermission[]> = {
         }
     ],
 
+    [Role.TÉCNICO_DE_ENFERMAGEM]: [
+        // Atendimentos e procedimentos
+        {
+            resource: SecurityResource.APPOINTMENTS,
+            actions: [SecurityAction.CREATE, SecurityAction.READ, SecurityAction.UPDATE],
+            scope: PermissionScope.ASSIGNED,
+            dataClassification: DataClassification.CONFIDENTIAL
+        },
+        {
+            resource: SecurityResource.CLIENTS,
+            actions: [SecurityAction.READ, SecurityAction.UPDATE],
+            scope: PermissionScope.ASSIGNED,
+            dataClassification: DataClassification.CONFIDENTIAL
+        },
+        {
+            resource: SecurityResource.ATTENDANCES,
+            actions: [SecurityAction.CREATE, SecurityAction.READ, SecurityAction.UPDATE],
+            scope: PermissionScope.ASSIGNED,
+            dataClassification: DataClassification.CONFIDENTIAL
+        },
+        {
+            resource: SecurityResource.PROFESSIONALS,
+            actions: [SecurityAction.READ],
+            scope: PermissionScope.DEPARTMENT,
+            dataClassification: DataClassification.INTERNAL
+        },
+        {
+            resource: SecurityResource.SERVICES,
+            actions: [SecurityAction.READ],
+            scope: PermissionScope.DEPARTMENT,
+            dataClassification: DataClassification.INTERNAL
+        },
+        {
+            resource: SecurityResource.PRODUCTS,
+            actions: [SecurityAction.READ],
+            scope: PermissionScope.DEPARTMENT,
+            dataClassification: DataClassification.INTERNAL
+        },
+        {
+            resource: SecurityResource.STOCK_MOVEMENTS,
+            actions: [SecurityAction.READ],
+            scope: PermissionScope.DEPARTMENT,
+            dataClassification: DataClassification.INTERNAL
+        },
+        {
+            resource: SecurityResource.REPORTS,
+            actions: [SecurityAction.READ],
+            scope: PermissionScope.DEPARTMENT,
+            dataClassification: DataClassification.INTERNAL
+        },
+        {
+            resource: SecurityResource.DASHBOARD,
+            actions: [SecurityAction.READ],
+            scope: PermissionScope.DEPARTMENT,
+            dataClassification: DataClassification.INTERNAL
+        }
+    ],
+
     [Role.SERVICOS_GERAIS]: [
         // Apenas dados de manutenção e limpeza
         {

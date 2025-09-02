@@ -107,6 +107,22 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'reports', actions: ['read'] },
     { resource: 'dashboard', actions: ['read'] },
   ],
+  TÉCNICO_DE_ENFERMAGEM: [
+    { resource: 'patients', actions: ['read', 'update'] },
+    { resource: 'appointments', actions: ['create', 'read', 'update'] },
+    { resource: 'clients', actions: ['read', 'update'] },
+    { resource: 'attendances', actions: ['create', 'read', 'update'] },
+    { resource: 'professionals', actions: ['read'] },
+    { resource: 'professional_schedules', actions: ['read'] },
+    { resource: 'services', actions: ['read'] },
+    { resource: 'appointment_reminders', actions: ['read'] },
+    { resource: 'payments', actions: ['read'] },
+    { resource: 'products', actions: ['read'] },
+    { resource: 'stock_movements', actions: ['read'] },
+    { resource: 'stock_alerts', actions: ['read'] },
+    { resource: 'reports', actions: ['read'] },
+    { resource: 'dashboard', actions: ['read'] },
+  ],
   SERVICOS_GERAIS: [
     { resource: 'facilities', actions: ['read', 'update'] },
     { resource: 'maintenance', actions: ['create', 'read', 'update'] },
@@ -129,6 +145,7 @@ export const getRoleDescription = (role: Role): string => {
     ADMINISTRADOR: 'Controle total sobre o sistema, incluindo gestão de usuários e configurações',
     MEDICO: 'Acesso completo aos históricos de pacientes e registros médicos',
     RECEPCIONISTA: 'Atendimento inicial aos pacientes e agendamento de consultas',
+    TÉCNICO_DE_ENFERMAGEM: 'Técnico de enfermagem - procedimentos e cuidados aos pacientes',
     SERVICOS_GERAIS: 'Manutenção e organização das instalações',
   };
   return descriptions[role];

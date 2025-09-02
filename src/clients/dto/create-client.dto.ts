@@ -66,6 +66,16 @@ export class CreateClientDto {
     @IsString()
     notes?: string;
 
+    @ApiProperty({ description: 'Se o paciente aceitou os termos de uso', required: false, default: false })
+    @IsOptional()
+    @IsBoolean()
+    termsAccepted?: boolean;
+
+    @ApiProperty({ description: 'Data/hora em que os termos foram aceitos', required: false })
+    @IsOptional()
+    @IsDateString()
+    termsAcceptedAt?: string;
+
     @ApiProperty({ description: 'Status ativo do cliente', required: false, default: true })
     @IsOptional()
     @IsBoolean()

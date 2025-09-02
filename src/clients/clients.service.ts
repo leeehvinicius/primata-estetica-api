@@ -47,6 +47,8 @@ export class ClientsService {
         if (dto.emergencyContact) clientData.emergencyContact = dto.emergencyContact;
         if (dto.emergencyPhone) clientData.emergencyPhone = dto.emergencyPhone;
         if (dto.notes) clientData.notes = dto.notes;
+        if (dto.termsAccepted !== undefined) clientData.termsAccepted = dto.termsAccepted;
+        if (dto.termsAcceptedAt) clientData.termsAcceptedAt = new Date(dto.termsAcceptedAt);
 
         return this.prisma.client.create({
             data: clientData,
@@ -54,7 +56,7 @@ export class ClientsService {
     }
 
     async findAll(query: ListClientsDto) {
-        const { page = 1, limit = 10, search, gender, isActive, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+        const { page = 1, limit = 10, search, gender, isActive, termsAccepted, sortBy = 'createdAt', sortOrder = 'desc' } = query;
         const skip = (page - 1) * limit;
 
         // Construir filtros
@@ -75,6 +77,10 @@ export class ClientsService {
 
         if (isActive !== undefined) {
             where.isActive = isActive;
+        }
+
+        if (termsAccepted !== undefined) {
+            where.termsAccepted = termsAccepted;
         }
 
         // Validar campo de ordenação
@@ -183,6 +189,8 @@ export class ClientsService {
         if (dto.emergencyContact !== undefined) updateData.emergencyContact = dto.emergencyContact;
         if (dto.emergencyPhone !== undefined) updateData.emergencyPhone = dto.emergencyPhone;
         if (dto.notes !== undefined) updateData.notes = dto.notes;
+        if (dto.termsAccepted !== undefined) updateData.termsAccepted = dto.termsAccepted;
+        if (dto.termsAcceptedAt !== undefined) updateData.termsAcceptedAt = dto.termsAcceptedAt ? new Date(dto.termsAcceptedAt) : null;
         if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
         return this.prisma.client.update({
@@ -315,5 +323,23 @@ export class ClientsService {
         }
 
         return client;
+    }
+
+    async acceptTerms(id: string) {
+        const client = await this.prisma.client.findUnique({
+            where: { id }
+        });
+
+        if (!client) {
+            throw new NotFoundException('Cliente não encontrado');
+        }
+
+        return this.prisma.client.update({
+            where: { id },
+            data: {
+                termsAccepted: true,
+                termsAcceptedAt: new Date(),
+            },
+        });
     }
 }

@@ -36,7 +36,7 @@ export class AppointmentsController {
     @ApiResponse({ status: 201, description: 'Agendamento criado com sucesso', type: AppointmentResponseDto })
     @ApiResponse({ status: 409, description: 'Horário não disponível' })
     @Post()
-    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA, Role.TÉCNICO_DE_ENFERMAGEM)
     @RequirePermission('appointments', 'create')
     @UseGuards(RolePermissionGuard)
     create(@Body() dto: CreateAppointmentDto, @GetUser() user: any) {
@@ -46,7 +46,7 @@ export class AppointmentsController {
     @ApiOperation({ summary: 'Listar agendamentos com filtros e paginação' })
     @ApiResponse({ status: 200, description: 'Lista de agendamentos', type: AppointmentListResponseDto })
     @Get()
-    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA, Role.TÉCNICO_DE_ENFERMAGEM)
     @RequirePermission('appointments', 'read')
     @UseGuards(RolePermissionGuard)
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Página atual' })

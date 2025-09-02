@@ -92,6 +92,8 @@ model Client {
   emergencyPhone   String?
   notes       String?  // Observações gerais
   lastCrmSync DateTime? // Última sincronização com CRM
+  termsAccepted Boolean @default(false) // Se o paciente aceitou os termos de uso
+  termsAcceptedAt DateTime? // Data/hora em que os termos foram aceitos
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -592,6 +594,7 @@ enum Role {
   ADMINISTRADOR    // Controle total sobre o sistema
   MEDICO          // Acesso completo aos históricos e registros médicos
   RECEPCIONISTA   // Atendimento inicial e agendamentos
+  TÉCNICO_DE_ENFERMAGEM // Técnico de enfermagem - procedimentos e cuidados
   SERVICOS_GERAIS // Manutenção e organização das instalações
 }
 

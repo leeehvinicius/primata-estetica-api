@@ -46,7 +46,7 @@ export class ClientsController {
     @ApiOperation({ summary: 'Listar clientes com filtros e paginação' })
     @ApiResponse({ status: 200, description: 'Lista de clientes', type: ClientListResponseDto })
     @Get()
-    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA, Role.TÉCNICO_DE_ENFERMAGEM)
     @RequirePermission('clients', 'read')
     @UseGuards(RolePermissionGuard)
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Página atual' })
@@ -64,7 +64,7 @@ export class ClientsController {
     @ApiResponse({ status: 200, description: 'Dados do cliente', type: ClientResponseDto })
     @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
     @Get(':id')
-    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA, Role.TÉCNICO_DE_ENFERMAGEM)
     @RequirePermission('clients', 'read')
     @UseGuards(RolePermissionGuard)
     findOne(@Param('id') id: string) {
@@ -76,7 +76,7 @@ export class ClientsController {
     @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
     @ApiResponse({ status: 409, description: 'Email ou CPF já cadastrado' })
     @Put(':id')
-    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA, Role.TÉCNICO_DE_ENFERMAGEM)
     @RequirePermission('clients', 'update')
     @UseGuards(RolePermissionGuard)
     update(
@@ -138,5 +138,16 @@ export class ClientsController {
     @UseGuards(RolePermissionGuard)
     getClientHistory(@Param('id') id: string) {
         return this.clients.getClientHistory(id);
+    }
+
+    @ApiOperation({ summary: 'Aceitar termos de uso do cliente' })
+    @ApiResponse({ status: 200, description: 'Termos aceitos com sucesso', type: ClientResponseDto })
+    @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
+    @Patch(':id/accept-terms')
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA, Role.TÉCNICO_DE_ENFERMAGEM)
+    @RequirePermission('clients', 'update')
+    @UseGuards(RolePermissionGuard)
+    acceptTerms(@Param('id') id: string) {
+        return this.clients.acceptTerms(id);
     }
 }

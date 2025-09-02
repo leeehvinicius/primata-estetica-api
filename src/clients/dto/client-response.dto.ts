@@ -44,6 +44,12 @@ export class ClientResponseDto {
     @ApiProperty({ required: false })
     notes?: string;
 
+    @ApiProperty({ description: 'Se o paciente aceitou os termos de uso' })
+    termsAccepted: boolean;
+
+    @ApiProperty({ description: 'Data/hora em que os termos foram aceitos', required: false })
+    termsAcceptedAt?: Date;
+
     @ApiProperty()
     isActive: boolean;
 

@@ -68,6 +68,16 @@ export class UpdateClientDto {
     @IsString()
     notes?: string;
 
+    @ApiProperty({ description: 'Se o paciente aceitou os termos de uso', required: false })
+    @IsOptional()
+    @IsBoolean()
+    termsAccepted?: boolean;
+
+    @ApiProperty({ description: 'Data/hora em que os termos foram aceitos', required: false })
+    @IsOptional()
+    @IsDateString()
+    termsAcceptedAt?: string;
+
     @ApiProperty({ description: 'Status ativo do cliente', required: false })
     @IsOptional()
     @IsBoolean()

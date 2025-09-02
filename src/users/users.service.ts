@@ -279,6 +279,7 @@ export class UsersService {
             ADMINISTRADOR: 0,
             MEDICO: 0,
             RECEPCIONISTA: 0,
+            TÉCNICO_DE_ENFERMAGEM: 0,
             SERVICOS_GERAIS: 0,
         };
 
