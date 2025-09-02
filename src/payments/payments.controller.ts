@@ -7,7 +7,6 @@ import {
     Delete, 
     Param, 
     UseGuards,
-    ParseUUIDPipe,
     HttpCode,
     HttpStatus,
     Query,
@@ -72,7 +71,7 @@ export class PaymentsController {
     @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
     @RequirePermission('payments', 'read')
     @UseGuards(RolePermissionGuard)
-    findOne(@Param('id', ParseUUIDPipe) id: string) {
+    findOne(@Param('id') id: string) {
         return this.payments.findOne(id);
     }
 
@@ -85,7 +84,7 @@ export class PaymentsController {
     @RequirePermission('payments', 'update')
     @UseGuards(RolePermissionGuard)
     update(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() dto: UpdatePaymentDto
     ) {
         return this.payments.update(id, dto);
@@ -99,7 +98,7 @@ export class PaymentsController {
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('payments', 'delete')
     @UseGuards(RolePermissionGuard)
-    remove(@Param('id', ParseUUIDPipe) id: string) {
+    remove(@Param('id') id: string) {
         return this.payments.remove(id);
     }
 
@@ -111,7 +110,7 @@ export class PaymentsController {
     @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
     @RequirePermission('payments', 'update')
     @UseGuards(RolePermissionGuard)
-    markAsPaid(@Param('id', ParseUUIDPipe) id: string) {
+    markAsPaid(@Param('id') id: string) {
         return this.payments.markAsPaid(id);
     }
 
@@ -124,7 +123,7 @@ export class PaymentsController {
     @RequirePermission('payments', 'update')
     @UseGuards(RolePermissionGuard)
     refund(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() body: { reason: string }
     ) {
         return this.payments.refund(id, body.reason);
@@ -137,7 +136,7 @@ export class PaymentsController {
     @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
     @RequirePermission('payment_receipts', 'create')
     @UseGuards(RolePermissionGuard)
-    generateReceipt(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: any) {
+    generateReceipt(@Param('id') id: string, @GetUser() user: any) {
         return this.payments.generateReceipt(id, user.id);
     }
 

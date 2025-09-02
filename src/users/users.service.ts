@@ -349,6 +349,9 @@ export class UsersService {
     }
 
     me(id: string) {
+        console.log('UsersService.me - id:', id);
+        console.log('UsersService.me - id type:', typeof id);
+        
         return this.prisma.user.findUnique({
             where: { id },
             select: { 

@@ -3,12 +3,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { PrismaModule } from '../prisma/prisma.module';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { BcryptService } from '../common/hash/bcrypt.service';
 
 @Module({
-    imports: [JwtModule.register({}), UsersModule],
+    imports: [JwtModule.register({}), UsersModule, PrismaModule],
     controllers: [AuthController],
     providers: [AuthService, JwtAccessStrategy, JwtRefreshStrategy, BcryptService],
 })

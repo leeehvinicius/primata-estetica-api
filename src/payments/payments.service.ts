@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { ConflictException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -10,37 +10,37 @@ export class PaymentsService {
 
     async create(dto: CreatePaymentDto, userId: string) {
         // Verificar se o cliente existe
-        const client = await (this.prisma as any).client.findUnique({
+        const client = await this.prisma.client.findUnique({
             where: { id: dto.clientId }
         });
         if (!client) {
-            throw new NotFoundException('Cliente não encontrado');
+            throw new NotFoundException('Cliente nÃ£o encontrado');
         }
 
-        // Verificar se o serviço existe
-        const service = await (this.prisma as any).service.findUnique({
+        // Verificar se o serviÃ§o existe
+        const service = await this.prisma.service.findUnique({
             where: { id: dto.serviceId }
         });
         if (!service) {
-            throw new NotFoundException('Serviço não encontrado');
+            throw new NotFoundException('ServiÃ§o nÃ£o encontrado');
         }
 
         // Verificar se o agendamento existe (se fornecido)
         if (dto.appointmentId) {
-            const appointment = await (this.prisma as any).appointment.findUnique({
+            const appointment = await this.prisma.appointment.findUnique({
                 where: { id: dto.appointmentId }
             });
             if (!appointment) {
-                throw new NotFoundException('Agendamento não encontrado');
+                throw new NotFoundException('Agendamento nÃ£o encontrado');
             }
         }
 
         // Calcular valor final
         const discountAmount = dto.discountAmount || 0;
-        const finalAmount = dto.amount - discountAmount;
+        const finalAmount = Number(dto.amount) - Number(discountAmount);
 
         if (finalAmount < 0) {
-            throw new BadRequestException('O valor final não pode ser negativo');
+            throw new BadRequestException('O valor final nÃ£o pode ser negativo');
         }
 
         const paymentData: any = {
@@ -70,7 +70,7 @@ export class PaymentsService {
             paymentData.transactionId = dto.transactionId;
         }
 
-        const payment = await (this.prisma as any).payment.create({
+        const payment = await this.prisma.payment.create({
             data: paymentData,
             include: {
                 client: {
@@ -106,9 +106,9 @@ export class PaymentsService {
             await this.generateReceipt(payment.id, userId);
         }
 
-        // Calcular e criar comissões se houver profissional no agendamento
+        // Calcular e criar comissÃµes se houver profissional no agendamento
         if (dto.appointmentId) {
-            const appointment = await (this.prisma as any).appointment.findUnique({
+            const appointment = await this.prisma.appointment.findUnique({
                 where: { id: dto.appointmentId },
                 include: { professional: true }
             });
@@ -154,16 +154,16 @@ export class PaymentsService {
             if (endDate) where.paymentDate.lte = new Date(endDate);
         }
 
-        // Validar campo de ordenação
+        // Validar campo de ordenaÃ§Ã£o
         const allowedSortFields = ['paymentDate', 'finalAmount', 'paymentStatus', 'paymentMethod', 'createdAt', 'updatedAt'];
         const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'paymentDate';
 
-        // Construir ordenação
+        // Construir ordenaÃ§Ã£o
         const orderBy: any = {};
         orderBy[validSortBy] = sortOrder;
 
         const [payments, total] = await Promise.all([
-            (this.prisma as any).payment.findMany({
+            this.prisma.payment.findMany({
                 where,
                 orderBy,
                 skip,
@@ -196,7 +196,7 @@ export class PaymentsService {
                     },
                 }
             }),
-            (this.prisma as any).payment.count({ where })
+            this.prisma.payment.count({ where })
         ]);
 
         const totalPages = Math.ceil(total / limit);
@@ -215,7 +215,7 @@ export class PaymentsService {
     }
 
     async findOne(id: string) {
-        const payment = await (this.prisma as any).payment.findUnique({
+        const payment = await this.prisma.payment.findUnique({
             where: { id },
             include: {
                 client: {
@@ -262,7 +262,7 @@ export class PaymentsService {
         });
 
         if (!payment) {
-            throw new NotFoundException('Pagamento não encontrado');
+            throw new NotFoundException('Pagamento nÃ£o encontrado');
         }
 
         return payment;
@@ -270,31 +270,31 @@ export class PaymentsService {
 
     async update(id: string, dto: UpdatePaymentDto) {
         // Verificar se o pagamento existe
-        const existingPayment = await (this.prisma as any).payment.findUnique({
+        const existingPayment = await this.prisma.payment.findUnique({
             where: { id }
         });
 
         if (!existingPayment) {
-            throw new NotFoundException('Pagamento não encontrado');
+            throw new NotFoundException('Pagamento nÃ£o encontrado');
         }
 
-        // Verificar se o serviço existe (se fornecido)
+        // Verificar se o serviÃ§o existe (se fornecido)
         if (dto.serviceId) {
-            const service = await (this.prisma as any).service.findUnique({
+            const service = await this.prisma.service.findUnique({
                 where: { id: dto.serviceId }
             });
             if (!service) {
-                throw new NotFoundException('Serviço não encontrado');
+                throw new NotFoundException('ServiÃ§o nÃ£o encontrado');
             }
         }
 
         // Verificar se o agendamento existe (se fornecido)
         if (dto.appointmentId) {
-            const appointment = await (this.prisma as any).appointment.findUnique({
+            const appointment = await this.prisma.appointment.findUnique({
                 where: { id: dto.appointmentId }
             });
             if (!appointment) {
-                throw new NotFoundException('Agendamento não encontrado');
+                throw new NotFoundException('Agendamento nÃ£o encontrado');
             }
         }
 
@@ -313,8 +313,8 @@ export class PaymentsService {
 
         // Recalcular valor final se amount ou discountAmount foram alterados
         if (dto.amount !== undefined || dto.discountAmount !== undefined) {
-            const newAmount = dto.amount ?? existingPayment.amount;
-            const newDiscount = dto.discountAmount ?? existingPayment.discountAmount;
+            const newAmount = dto.amount ?? Number(existingPayment.amount);
+            const newDiscount = dto.discountAmount ?? Number(existingPayment.discountAmount);
             const newFinalAmount = newAmount - newDiscount;
 
             if (newFinalAmount < 0) {
@@ -324,7 +324,7 @@ export class PaymentsService {
             updateData.finalAmount = newFinalAmount;
         }
 
-        return (this.prisma as any).payment.update({
+        return this.prisma.payment.update({
             where: { id },
             data: updateData,
             include: {
@@ -359,32 +359,32 @@ export class PaymentsService {
 
     async remove(id: string) {
         // Verificar se o pagamento existe
-        const existingPayment = await (this.prisma as any).payment.findUnique({
+        const existingPayment = await this.prisma.payment.findUnique({
             where: { id }
         });
 
         if (!existingPayment) {
-            throw new NotFoundException('Pagamento não encontrado');
+            throw new NotFoundException('Pagamento nÃ£o encontrado');
         }
 
-        await (this.prisma as any).payment.delete({ where: { id } });
+        await this.prisma.payment.delete({ where: { id } });
         return { message: 'Pagamento deletado com sucesso' };
     }
 
     async markAsPaid(id: string) {
-        const payment = await (this.prisma as any).payment.findUnique({
+        const payment = await this.prisma.payment.findUnique({
             where: { id }
         });
 
         if (!payment) {
-            throw new NotFoundException('Pagamento não encontrado');
+            throw new NotFoundException('Pagamento nÃ£o encontrado');
         }
 
         if (payment.paymentStatus === 'PAID') {
-            throw new BadRequestException('Pagamento já está pago');
+            throw new BadRequestException('Pagamento jÃ¡ estÃ¡ pago');
         }
 
-        return (this.prisma as any).payment.update({
+        return this.prisma.payment.update({
             where: { id },
             data: { 
                 paymentStatus: 'PAID',
@@ -394,19 +394,19 @@ export class PaymentsService {
     }
 
     async refund(id: string, reason: string) {
-        const payment = await (this.prisma as any).payment.findUnique({
+        const payment = await this.prisma.payment.findUnique({
             where: { id }
         });
 
         if (!payment) {
-            throw new NotFoundException('Pagamento não encontrado');
+            throw new NotFoundException('Pagamento nÃ£o encontrado');
         }
 
         if (payment.paymentStatus === 'REFUNDED') {
-            throw new BadRequestException('Pagamento já foi reembolsado');
+            throw new BadRequestException('Pagamento jÃ¡ foi reembolsado');
         }
 
-        return (this.prisma as any).payment.update({
+        return this.prisma.payment.update({
             where: { id },
             data: { 
                 paymentStatus: 'REFUNDED',
@@ -416,7 +416,7 @@ export class PaymentsService {
     }
 
     async generateReceipt(paymentId: string, userId: string) {
-        const payment = await (this.prisma as any).payment.findUnique({
+        const payment = await this.prisma.payment.findUnique({
             where: { id: paymentId },
             include: {
                 client: true,
@@ -425,13 +425,13 @@ export class PaymentsService {
         });
 
         if (!payment) {
-            throw new NotFoundException('Pagamento não encontrado');
+            throw new NotFoundException('Pagamento nÃ£o encontrado');
         }
 
-        // Gerar número do recibo
+        // Gerar nÃºmero do recibo
         const receiptNumber = await this.generateReceiptNumber();
 
-        const receipt = await (this.prisma as any).paymentReceipt.create({
+        const receipt = await this.prisma.paymentReceipt.create({
             data: {
                 paymentId,
                 receiptNumber,
@@ -441,8 +441,8 @@ export class PaymentsService {
             }
         });
 
-        // Atualizar o pagamento com o número do recibo
-        await (this.prisma as any).payment.update({
+        // Atualizar o pagamento com o nÃºmero do recibo
+        await this.prisma.payment.update({
             where: { id: paymentId },
             data: { receiptNumber }
         });
@@ -457,42 +457,42 @@ export class PaymentsService {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
         const [total, byStatus, byMethod, today, thisWeek, thisMonth, totalAmount, totalPaid, totalPending, totalOverdue, totalRefunded] = await Promise.all([
-            (this.prisma as any).payment.count(),
-            (this.prisma as any).payment.groupBy({
+            this.prisma.payment.count(),
+            this.prisma.payment.groupBy({
                 by: ['paymentStatus'],
                 _count: { paymentStatus: true },
                 _sum: { finalAmount: true }
             }),
-            (this.prisma as any).payment.groupBy({
+            this.prisma.payment.groupBy({
                 by: ['paymentMethod'],
                 _count: { paymentMethod: true },
                 _sum: { finalAmount: true }
             }),
-            (this.prisma as any).payment.count({
+            this.prisma.payment.count({
                 where: { paymentDate: { gte: startOfDay } }
             }),
-            (this.prisma as any).payment.count({
+            this.prisma.payment.count({
                 where: { paymentDate: { gte: startOfWeek } }
             }),
-            (this.prisma as any).payment.count({
+            this.prisma.payment.count({
                 where: { paymentDate: { gte: startOfMonth } }
             }),
-            (this.prisma as any).payment.aggregate({
+            this.prisma.payment.aggregate({
                 _sum: { finalAmount: true }
             }),
-            (this.prisma as any).payment.aggregate({
+            this.prisma.payment.aggregate({
                 where: { paymentStatus: 'PAID' },
                 _sum: { finalAmount: true }
             }),
-            (this.prisma as any).payment.aggregate({
+            this.prisma.payment.aggregate({
                 where: { paymentStatus: 'PENDING' },
                 _sum: { finalAmount: true }
             }),
-            (this.prisma as any).payment.aggregate({
+            this.prisma.payment.aggregate({
                 where: { paymentStatus: 'OVERDUE' },
                 _sum: { finalAmount: true }
             }),
-            (this.prisma as any).payment.aggregate({
+            this.prisma.payment.aggregate({
                 where: { paymentStatus: 'REFUNDED' },
                 _sum: { finalAmount: true }
             })
@@ -508,7 +508,7 @@ export class PaymentsService {
             methodStats[stat.paymentMethod] = stat._count.paymentMethod;
         });
 
-        const averageAmount = total > 0 ? (totalAmount._sum.finalAmount || 0) / total : 0;
+        const averageAmount = total > 0 ? Number(totalAmount._sum.finalAmount || 0) / total : 0;
 
         return {
             total,
@@ -527,11 +527,11 @@ export class PaymentsService {
     }
 
     private async calculateCommission(paymentId: string, professionalId: string, amount: number, userId: string) {
-        // Percentual padrão de comissão (pode ser configurável)
+        // Percentual padrÃ£o de comissÃ£o (pode ser configurÃ¡vel)
         const commissionPercentage = 15; // 15%
         const commissionAmount = (amount * commissionPercentage) / 100;
 
-        await (this.prisma as any).commission.create({
+        await this.prisma.commission.create({
             data: {
                 paymentId,
                 professionalId,
@@ -544,7 +544,7 @@ export class PaymentsService {
 
     private async generateReceiptNumber(): Promise<string> {
         const year = new Date().getFullYear();
-        const count = await (this.prisma as any).paymentReceipt.count({
+        const count = await this.prisma.paymentReceipt.count({
             where: {
                 createdAt: {
                     gte: new Date(year, 0, 1),

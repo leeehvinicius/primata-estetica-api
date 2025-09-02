@@ -11,7 +11,7 @@ import {
     PermissionCheckDto,
     PermissionResult
 } from './dto/enhanced-permissions.dto';
-import { Role } from '@prisma/client';
+import { Role, SecurityEventType, SecuritySeverity } from '@prisma/client';
 
 @Injectable()
 export class EnhancedPermissionsService {
@@ -94,7 +94,7 @@ export class EnhancedPermissionsService {
             // Log da verificação de permissão
             await this.securityService.logAction({
                 userId: dto.userId,
-                action: 'PERMISSION_CHECK',
+                action: 'SYSTEM_ACCESS',
                 resource: 'permissions',
                 method: 'POST',
                 endpoint: '/security/permissions/check',
@@ -448,7 +448,7 @@ export class EnhancedPermissionsService {
     ): Promise<void> {
         await this.securityService.logAction({
             userId,
-            action: 'PERMISSION_AUDIT',
+            action: 'ADMIN_ACTION',
             resource: 'permissions',
             method: 'POST',
             endpoint: '/security/permissions/audit',
@@ -466,8 +466,8 @@ export class EnhancedPermissionsService {
         if (!allowed) {
             await this.securityService.logSecurityEvent({
                 userId,
-                eventType: 'UNAUTHORIZED_ACCESS',
-                severity: 'MEDIUM',
+                eventType: SecurityEventType.UNAUTHORIZED_ACCESS,
+                severity: SecuritySeverity.MEDIUM,
                 description: `Tentativa de acesso negado: ${action} em ${resource}`,
                 ipAddress: '127.0.0.1',
                 metadata: {

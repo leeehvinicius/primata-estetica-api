@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Request } from 'express';
 import * as crypto from 'crypto';
 import * as geoip from 'geoip-lite';
+import { AuditAction, AuditSeverity, SecuritySeverity, SecurityEventType, LoginMethod, SecurityConfigCategory } from '@prisma/client';
 
 @Injectable()
 export class SecurityService {
@@ -14,7 +15,7 @@ export class SecurityService {
     async logAction(params: {
         userId?: string;
         sessionId?: string;
-        action: string;
+        action: AuditAction;
         resource: string;
         resourceId?: string;
         method: string;
@@ -24,7 +25,7 @@ export class SecurityService {
         oldValues?: any;
         newValues?: any;
         metadata?: any;
-        severity?: string;
+        severity?: AuditSeverity;
         success: boolean;
         errorMessage?: string;
         duration?: number;
@@ -44,7 +45,7 @@ export class SecurityService {
                     oldValues: params.oldValues ? JSON.stringify(params.oldValues) : null,
                     newValues: params.newValues ? JSON.stringify(params.newValues) : null,
                     metadata: params.metadata ? JSON.stringify(params.metadata) : null,
-                    severity: params.severity || 'INFO',
+                    severity: params.severity || AuditSeverity.INFO,
                     success: params.success,
                     errorMessage: params.errorMessage,
                     duration: params.duration,
@@ -59,8 +60,8 @@ export class SecurityService {
     async logSecurityEvent(params: {
         userId?: string;
         sessionId?: string;
-        eventType: string;
-        severity?: string;
+        eventType: SecurityEventType;
+        severity?: SecuritySeverity;
         description: string;
         ipAddress: string;
         userAgent?: string;
@@ -74,7 +75,7 @@ export class SecurityService {
                     userId: params.userId,
                     sessionId: params.sessionId,
                     eventType: params.eventType,
-                    severity: params.severity || 'MEDIUM',
+                    severity: params.severity || SecuritySeverity.MEDIUM,
                     description: params.description,
                     ipAddress: params.ipAddress,
                     userAgent: params.userAgent,
@@ -84,7 +85,7 @@ export class SecurityService {
             });
 
             // Log crítico para o sistema
-            if (params.severity === 'CRITICAL' || params.severity === 'HIGH') {
+            if (params.severity === SecuritySeverity.CRITICAL || params.severity === SecuritySeverity.HIGH) {
                 this.logger.error(`SECURITY EVENT: ${params.eventType} - ${params.description}`, {
                     userId: params.userId,
                     ipAddress: params.ipAddress,
@@ -103,7 +104,7 @@ export class SecurityService {
         refreshToken?: string;
         ipAddress: string;
         userAgent?: string;
-        loginMethod?: string;
+        loginMethod?: LoginMethod;
         expiresAt: Date;
     }) {
         const sessionTokenHash = this.hashToken(params.sessionToken);
@@ -119,7 +120,7 @@ export class SecurityService {
                 ipAddress: params.ipAddress,
                 userAgent: params.userAgent,
                 location: location ? JSON.stringify(location) : null,
-                loginMethod: params.loginMethod || 'EMAIL_PASSWORD',
+                loginMethod: params.loginMethod || LoginMethod.EMAIL_PASSWORD,
                 deviceFingerprint,
                 expiresAt: params.expiresAt,
             }
@@ -236,8 +237,8 @@ export class SecurityService {
         if (isBlocked) {
             // Log evento de segurança
             await this.logSecurityEvent({
-                eventType: 'BRUTE_FORCE_ATTEMPT',
-                severity: 'HIGH',
+                eventType: SecurityEventType.BRUTE_FORCE_ATTEMPT,
+                severity: SecuritySeverity.HIGH,
                 description: `Tentativa de força bruta detectada para ${email} do IP ${ipAddress}`,
                 ipAddress,
                 metadata: { emailAttempts, ipAttempts }
@@ -388,7 +389,7 @@ export class SecurityService {
             (this.prisma as any).securityEvent.count({
                 where: {
                     createdAt: { gte: start, lte: end },
-                    severity: { in: ['HIGH', 'CRITICAL'] },
+                    severity: { in: [SecuritySeverity.HIGH, SecuritySeverity.CRITICAL] },
                     resolved: false
                 }
             })

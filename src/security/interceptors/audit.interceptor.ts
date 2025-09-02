@@ -9,6 +9,7 @@ import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Request } from 'express';
 import { SecurityService } from '../security.service';
+import { AuditAction, AuditSeverity } from '@prisma/client';
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
@@ -91,7 +92,7 @@ export class AuditInterceptor implements NestInterceptor {
                     ipAddress,
                     userAgent,
                     oldValues,
-                    severity: 'HIGH',
+                    severity: AuditSeverity.HIGH,
                     success: false,
                     errorMessage: error.message,
                     duration,
@@ -115,15 +116,15 @@ export class AuditInterceptor implements NestInterceptor {
         );
     }
 
-    private getActionFromMethod(method: string): string {
-        const actionMap: Record<string, string> = {
-            'GET': 'READ',
-            'POST': 'create',
-            'PUT': 'update',
-            'PATCH': 'update',
-            'DELETE': 'delete',
+    private getActionFromMethod(method: string): AuditAction {
+        const actionMap: Record<string, AuditAction> = {
+            'GET': AuditAction.READ,
+            'POST': AuditAction.CREATE,
+            'PUT': AuditAction.UPDATE,
+            'PATCH': AuditAction.UPDATE,
+            'DELETE': AuditAction.DELETE,
         };
-        return actionMap[method.toUpperCase()] || 'unknown';
+        return actionMap[method.toUpperCase()] || AuditAction.READ;
     }
 
     private getResourceFromEndpoint(endpoint: string): string {
@@ -174,15 +175,15 @@ export class AuditInterceptor implements NestInterceptor {
         return null;
     }
 
-    private getSeverity(action: string, resource: string): string {
+    private getSeverity(action: AuditAction, resource: string): AuditSeverity {
         // Definir severidade baseada na ação e recurso
-        if (action === 'delete' || resource === 'users' || resource === 'security') {
-            return 'HIGH';
+        if (action === AuditAction.DELETE || resource === 'users' || resource === 'security') {
+            return AuditSeverity.HIGH;
         }
-        if (action === 'update' && (resource === 'payments' || resource === 'appointments')) {
-            return 'MEDIUM';
+        if (action === AuditAction.UPDATE && (resource === 'payments' || resource === 'appointments')) {
+            return AuditSeverity.MEDIUM;
         }
-        return 'INFO';
+        return AuditSeverity.INFO;
     }
 
     private getRequestSize(request: Request): number | undefined {

@@ -7,7 +7,6 @@ import {
     Delete, 
     Param, 
     UseGuards,
-    ParseUUIDPipe,
     HttpCode,
     HttpStatus,
     Query,
@@ -29,7 +28,7 @@ import { Role } from '@prisma/client';
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtAccessGuard, RolesGuard)
+@UseGuards(JwtAccessGuard)
 export class UsersController {
     constructor(private users: UsersService) { }
 
@@ -37,9 +36,9 @@ export class UsersController {
     @ApiResponse({ status: 201, description: 'Usuário criado com sucesso', type: UserResponseDto })
     @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
     @Post()
+    @UseGuards(RolesGuard, RolePermissionGuard)
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('users', 'create')
-    @UseGuards(RolePermissionGuard)
     register(@Body() dto: CreateUserDto) {
         return this.users.create(dto);
     }
@@ -47,9 +46,9 @@ export class UsersController {
     @ApiOperation({ summary: 'Listar usuários com filtros e paginação' })
     @ApiResponse({ status: 200, description: 'Lista de usuários', type: UserListResponseDto })
     @Get()
+    @UseGuards(RolesGuard, RolePermissionGuard)
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('users', 'read')
-    @UseGuards(RolePermissionGuard)
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Página atual' })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Itens por página' })
     @ApiQuery({ name: 'search', required: false, type: String, description: 'Buscar por nome, email, telefone ou documento' })
@@ -61,14 +60,23 @@ export class UsersController {
         return this.users.findAll(query);
     }
 
+    @ApiOperation({ summary: 'Dados do usuário autenticado' })
+    @ApiResponse({ status: 200, description: 'Dados do usuário autenticado', type: UserResponseDto })
+    @Get('me')
+    me(@GetUser('sub') userId: string) {
+        console.log('UsersController.me - userId:', userId);
+        console.log('UsersController.me - userId type:', typeof userId);
+        return this.users.me(userId);
+    }
+
     @ApiOperation({ summary: 'Buscar usuário por ID' })
     @ApiResponse({ status: 200, description: 'Dados do usuário', type: UserResponseDto })
     @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
     @Get(':id')
+    @UseGuards(RolesGuard, RolePermissionGuard)
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('users', 'read')
-    @UseGuards(RolePermissionGuard)
-    findOne(@Param('id', ParseUUIDPipe) id: string) {
+    findOne(@Param('id') id: string) {
         return this.users.findOne(id);
     }
 
@@ -77,16 +85,16 @@ export class UsersController {
     @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
     @ApiResponse({ status: 403, description: 'Acesso negado' })
     @Put(':id')
+    @UseGuards(RolesGuard, RolePermissionGuard)
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('users', 'update')
-    @UseGuards(RolePermissionGuard)
     update(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() dto: UpdateUserDto,
         @GetUser('sub') currentUserId: string,
-        @GetUser('role') currentUserRole: Role
+        @GetUser('profile') profile: any
     ) {
-        return this.users.update(id, dto, currentUserRole);
+        return this.users.update(id, dto, profile.role);
     }
 
     @ApiOperation({ summary: 'Deletar usuário' })
@@ -95,14 +103,14 @@ export class UsersController {
     @ApiResponse({ status: 403, description: 'Acesso negado' })
     @Delete(':id')
     @HttpCode(HttpStatus.OK)
+    @UseGuards(RolesGuard, RolePermissionGuard)
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('users', 'delete')
-    @UseGuards(RolePermissionGuard)
     remove(
-        @Param('id', ParseUUIDPipe) id: string,
-        @GetUser('role') currentUserRole: Role
+        @Param('id') id: string,
+        @GetUser('profile') profile: any
     ) {
-        return this.users.remove(id, currentUserRole);
+        return this.users.remove(id, profile.role);
     }
 
     @ApiOperation({ summary: 'Alternar status do usuário (ativo/inativo)' })
@@ -110,29 +118,22 @@ export class UsersController {
     @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
     @ApiResponse({ status: 403, description: 'Acesso negado' })
     @Patch(':id/toggle-status')
+    @UseGuards(RolesGuard, RolePermissionGuard)
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('users', 'update')
-    @UseGuards(RolePermissionGuard)
     toggleStatus(
-        @Param('id', ParseUUIDPipe) id: string,
-        @GetUser('role') currentUserRole: Role
+        @Param('id') id: string,
+        @GetUser('profile') profile: any
     ) {
-        return this.users.toggleUserStatus(id, currentUserRole);
-    }
-
-    @ApiOperation({ summary: 'Dados do usuário autenticado' })
-    @ApiResponse({ status: 200, description: 'Dados do usuário autenticado', type: UserResponseDto })
-    @Get('me')
-    me(@GetUser('sub') userId: string) {
-        return this.users.me(userId);
+        return this.users.toggleUserStatus(id, profile.role);
     }
 
     @ApiOperation({ summary: 'Estatísticas dos usuários' })
     @ApiResponse({ status: 200, description: 'Estatísticas dos usuários', type: UserStatsResponseDto })
     @Get('stats/overview')
+    @UseGuards(RolesGuard, RolePermissionGuard)
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('users', 'read')
-    @UseGuards(RolePermissionGuard)
     getStats() {
         return this.users.getStats();
     }
@@ -140,6 +141,7 @@ export class UsersController {
     @ApiOperation({ summary: 'Listar todos os roles disponíveis' })
     @ApiResponse({ status: 200, description: 'Lista de roles com descrições' })
     @Get('roles/list')
+    @UseGuards(RolesGuard)
     @Roles(Role.ADMINISTRADOR)
     getRoles() {
         return this.users.getRoles();
@@ -148,6 +150,7 @@ export class UsersController {
     @ApiOperation({ summary: 'Informações de um role específico' })
     @ApiResponse({ status: 200, description: 'Informações do role' })
     @Get('roles/:role')
+    @UseGuards(RolesGuard)
     @Roles(Role.ADMINISTRADOR)
     getRoleInfo(@Param('role') role: Role) {
         return this.users.getRoleInfo(role);
