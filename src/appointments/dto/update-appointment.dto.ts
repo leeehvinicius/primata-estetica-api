@@ -1,16 +1,21 @@
-import { IsString, IsOptional, IsEnum, IsDateString, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsDateString, IsNumber, Min, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { AppointmentType, AppointmentPriority, AppointmentStatus } from '@prisma/client';
+import { AppointmentStatus, AppointmentType, AppointmentPriority } from '@prisma/client';
 
 export class UpdateAppointmentDto {
-    @ApiProperty({ description: 'ID do profissional (opcional)', required: false })
+    @ApiProperty({ description: 'ID do cliente', required: false })
     @IsOptional()
-    @IsUUID()
+    @IsString()
+    clientId?: string;
+
+    @ApiProperty({ description: 'ID do profissional', required: false })
+    @IsOptional()
+    @IsString()
     professionalId?: string;
 
     @ApiProperty({ description: 'ID do serviço', required: false })
     @IsOptional()
-    @IsUUID()
+    @IsString()
     serviceId?: string;
 
     @ApiProperty({ description: 'Data do agendamento (YYYY-MM-DD)', required: false })

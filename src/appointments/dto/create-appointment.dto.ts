@@ -4,16 +4,15 @@ import { AppointmentType, AppointmentPriority } from '@prisma/client';
 
 export class CreateAppointmentDto {
     @ApiProperty({ description: 'ID do cliente' })
-    @IsUUID()
+    @IsString()
     clientId: string;
 
-    @ApiProperty({ description: 'ID do profissional (opcional)', required: false })
-    @IsOptional()
-    @IsUUID()
-    professionalId?: string;
+    @ApiProperty({ description: 'ID do profissional' })
+    @IsString()
+    professionalId: string;
 
     @ApiProperty({ description: 'ID do serviço' })
-    @IsUUID()
+    @IsString()
     serviceId: string;
 
     @ApiProperty({ description: 'Data do agendamento (YYYY-MM-DD)' })

@@ -1,19 +1,19 @@
-import { IsString, IsOptional, IsEnum, IsNumber, Min, IsUUID, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsNumber, Min, IsDateString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
 
 export class CreatePaymentDto {
     @ApiProperty({ description: 'ID do cliente' })
-    @IsUUID()
+    @IsString()
     clientId: string;
 
     @ApiProperty({ description: 'ID do agendamento (opcional)', required: false })
     @IsOptional()
-    @IsUUID()
+    @IsString()
     appointmentId?: string;
 
     @ApiProperty({ description: 'ID do serviço' })
-    @IsUUID()
+    @IsString()
     serviceId: string;
 
     @ApiProperty({ description: 'Valor do pagamento' })

@@ -1,4 +1,4 @@
-import { IsOptional, IsDateString, IsEnum, IsUUID } from 'class-validator';
+import { IsOptional, IsDateString, IsEnum, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum AppointmentReportType {
@@ -25,20 +25,20 @@ export class AppointmentReportDto {
   @IsDateString()
   endDate?: string;
 
-  @ApiProperty({ description: 'ID do serviço (opcional)', required: false })
+  @ApiProperty({ description: 'ID do cliente', required: false })
   @IsOptional()
-  @IsUUID()
-  serviceId?: string;
+  @IsString()
+  clientId?: string;
 
-  @ApiProperty({ description: 'ID do profissional (opcional)', required: false })
+  @ApiProperty({ description: 'ID do profissional', required: false })
   @IsOptional()
-  @IsUUID()
+  @IsString()
   professionalId?: string;
 
-  @ApiProperty({ description: 'ID do cliente (opcional)', required: false })
+  @ApiProperty({ description: 'ID do serviço', required: false })
   @IsOptional()
-  @IsUUID()
-  clientId?: string;
+  @IsString()
+  serviceId?: string;
 
   @ApiProperty({ description: 'Incluir detalhes de agendamentos', required: false, default: false })
   @IsOptional()

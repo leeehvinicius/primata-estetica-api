@@ -1,10 +1,10 @@
-import { IsOptional, IsDateString, IsUUID } from 'class-validator';
+import { IsOptional, IsDateString, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ProfessionalPerformanceDto {
   @ApiProperty({ description: 'ID do profissional (opcional)', required: false })
   @IsOptional()
-  @IsUUID()
+  @IsString()
   professionalId?: string;
 
   @ApiProperty({ description: 'Data de início (YYYY-MM-DD)', required: false })

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber, Min, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber, Min, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ServiceCategory } from '@prisma/client';
 
@@ -68,6 +68,12 @@ export class CreateServiceDto {
     @IsOptional()
     @IsString()
     notes?: string;
+
+    @ApiProperty({ description: 'Cor do serviço (hex, ex: #FF5733)', required: false })
+    @IsOptional()
+    @IsString()
+    @Matches(/^#([0-9a-fA-F]{3}){1,2}$/,{ message: 'color deve ser um hex válido, ex: #AABBCC' })
+    color?: string;
 
     @ApiProperty({ description: 'Status ativo do serviço', required: false, default: true })
     @IsOptional()

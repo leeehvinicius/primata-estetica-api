@@ -7,7 +7,6 @@ import {
     Delete, 
     Param, 
     UseGuards,
-    ParseUUIDPipe,
     HttpCode,
     HttpStatus,
     Query,
@@ -70,7 +69,7 @@ export class ServicesController {
     @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
     @RequirePermission('services', 'read')
     @UseGuards(RolePermissionGuard)
-    findOne(@Param('id', ParseUUIDPipe) id: string) {
+    findOne(@Param('id') id: string) {
         return this.services.findOne(id);
     }
 
@@ -83,7 +82,7 @@ export class ServicesController {
     @RequirePermission('services', 'update')
     @UseGuards(RolePermissionGuard)
     update(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() dto: UpdateServiceDto
     ) {
         return this.services.update(id, dto);
@@ -97,7 +96,7 @@ export class ServicesController {
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('services', 'delete')
     @UseGuards(RolePermissionGuard)
-    remove(@Param('id', ParseUUIDPipe) id: string) {
+    remove(@Param('id') id: string) {
         return this.services.remove(id);
     }
 
@@ -108,7 +107,7 @@ export class ServicesController {
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('services', 'update')
     @UseGuards(RolePermissionGuard)
-    toggleStatus(@Param('id', ParseUUIDPipe) id: string) {
+    toggleStatus(@Param('id') id: string) {
         return this.services.toggleStatus(id);
     }
 

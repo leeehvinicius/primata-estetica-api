@@ -20,6 +20,21 @@ export class ServicesService {
             throw new ConflictException('Serviço com este nome já existe');
         }
 
+        // Se userId não foi fornecido, buscar um usuário admin padrão
+        let createdBy = userId;
+        if (!createdBy) {
+            const adminUser = await (this.prisma as any).user.findFirst({
+                where: { 
+                    profile: { role: 'ADMINISTRADOR' }
+                }
+            });
+            if (adminUser) {
+                createdBy = adminUser.id;
+            } else {
+                throw new ConflictException('Usuário não encontrado para criar o serviço');
+            }
+        }
+
         const serviceData: any = {
             name: dto.name,
             category: dto.category,
@@ -29,7 +44,7 @@ export class ServicesService {
             requiresProfessional: dto.requiresProfessional ?? true,
             maxConcurrentClients: dto.maxConcurrentClients ?? 1,
             isActive: dto.isActive ?? true,
-            createdBy: userId,
+            createdBy: createdBy,
         };
 
         // Adicionar campos opcionais se fornecidos
@@ -39,6 +54,7 @@ export class ServicesService {
         if (dto.contraindications) serviceData.contraindications = dto.contraindications;
         if (dto.benefits) serviceData.benefits = dto.benefits;
         if (dto.notes) serviceData.notes = dto.notes;
+        if (dto.color) serviceData.color = dto.color;
 
         return (this.prisma as any).service.create({
             data: serviceData,
@@ -158,6 +174,7 @@ export class ServicesService {
         if (dto.contraindications !== undefined) updateData.contraindications = dto.contraindications;
         if (dto.benefits !== undefined) updateData.benefits = dto.benefits;
         if (dto.notes !== undefined) updateData.notes = dto.notes;
+        if (dto.color !== undefined) updateData.color = dto.color;
         if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
         return (this.prisma as any).service.update({

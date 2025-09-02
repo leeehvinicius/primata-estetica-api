@@ -8,7 +8,6 @@ import {
     Param,
     Query,
     UseGuards,
-    ParseUUIDPipe,
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
@@ -188,7 +187,7 @@ export class SecurityController {
     @RequirePermission('security', 'update')
     @UseGuards(RolePermissionGuard)
     async resolveSecurityEvent(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() body: { notes?: string },
         @GetUser() user: any
     ) {
@@ -257,7 +256,7 @@ export class SecurityController {
     @UseGuards(RolePermissionGuard)
     @HttpCode(HttpStatus.OK)
     async terminateSession(
-        @Param('id', ParseUUIDPipe) sessionId: string,
+        @Param('id') sessionId: string,
         @GetUser() user: any
     ) {
         await this.securityService.terminateSession(sessionId, user.id);
@@ -286,7 +285,7 @@ export class SecurityController {
     @UseGuards(RolePermissionGuard)
     @HttpCode(HttpStatus.OK)
     async terminateAllUserSessions(
-        @Param('userId', ParseUUIDPipe) userId: string,
+        @Param('userId') userId: string,
         @GetUser() user: any
     ) {
         await this.securityService.terminateAllUserSessions(userId, undefined, user.id);

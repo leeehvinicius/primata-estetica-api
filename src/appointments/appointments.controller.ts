@@ -7,7 +7,6 @@ import {
     Delete, 
     Param, 
     UseGuards,
-    ParseUUIDPipe,
     HttpCode,
     HttpStatus,
     Query,
@@ -72,7 +71,7 @@ export class AppointmentsController {
     @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
     @RequirePermission('appointments', 'read')
     @UseGuards(RolePermissionGuard)
-    findOne(@Param('id', ParseUUIDPipe) id: string) {
+    findOne(@Param('id') id: string) {
         return this.appointments.findOne(id);
     }
 
@@ -84,7 +83,7 @@ export class AppointmentsController {
     @RequirePermission('appointments', 'update')
     @UseGuards(RolePermissionGuard)
     update(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() dto: UpdateAppointmentDto
     ) {
         return this.appointments.update(id, dto);
@@ -98,7 +97,7 @@ export class AppointmentsController {
     @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
     @RequirePermission('appointments', 'delete')
     @UseGuards(RolePermissionGuard)
-    remove(@Param('id', ParseUUIDPipe) id: string) {
+    remove(@Param('id') id: string) {
         return this.appointments.remove(id);
     }
 
@@ -111,7 +110,7 @@ export class AppointmentsController {
     @RequirePermission('appointments', 'update')
     @UseGuards(RolePermissionGuard)
     cancel(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() body: { reason: string }
     ) {
         return this.appointments.cancel(id, body.reason);
@@ -127,7 +126,7 @@ export class AppointmentsController {
     @RequirePermission('appointments', 'update')
     @UseGuards(RolePermissionGuard)
     reschedule(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() body: { newDate: string; newTime: string }
     ) {
         return this.appointments.reschedule(id, body.newDate, body.newTime);

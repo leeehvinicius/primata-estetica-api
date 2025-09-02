@@ -7,7 +7,6 @@ import {
     Delete, 
     Param, 
     UseGuards,
-    ParseUUIDPipe,
     HttpCode,
     HttpStatus,
     Query,
@@ -68,7 +67,7 @@ export class ClientsController {
     @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
     @RequirePermission('clients', 'read')
     @UseGuards(RolePermissionGuard)
-    findOne(@Param('id', ParseUUIDPipe) id: string) {
+    findOne(@Param('id') id: string) {
         return this.clients.findOne(id);
     }
 
@@ -81,7 +80,7 @@ export class ClientsController {
     @RequirePermission('clients', 'update')
     @UseGuards(RolePermissionGuard)
     update(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() dto: UpdateClientDto
     ) {
         return this.clients.update(id, dto);
@@ -95,7 +94,7 @@ export class ClientsController {
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('clients', 'delete')
     @UseGuards(RolePermissionGuard)
-    remove(@Param('id', ParseUUIDPipe) id: string) {
+    remove(@Param('id') id: string) {
         return this.clients.remove(id);
     }
 
@@ -106,7 +105,7 @@ export class ClientsController {
     @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
     @RequirePermission('clients', 'update')
     @UseGuards(RolePermissionGuard)
-    toggleStatus(@Param('id', ParseUUIDPipe) id: string) {
+    toggleStatus(@Param('id') id: string) {
         return this.clients.toggleStatus(id);
     }
 
@@ -137,7 +136,7 @@ export class ClientsController {
     @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
     @RequirePermission('clients', 'read')
     @UseGuards(RolePermissionGuard)
-    getClientHistory(@Param('id', ParseUUIDPipe) id: string) {
+    getClientHistory(@Param('id') id: string) {
         return this.clients.getClientHistory(id);
     }
 }

@@ -7,7 +7,6 @@ import {
     Delete, 
     Param, 
     UseGuards,
-    ParseUUIDPipe,
     HttpCode,
     HttpStatus,
     Query,
@@ -69,7 +68,7 @@ export class ProfessionalsController {
     @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
     @RequirePermission('professionals', 'read')
     @UseGuards(RolePermissionGuard)
-    findOne(@Param('id', ParseUUIDPipe) id: string) {
+    findOne(@Param('id') id: string) {
         return this.professionals.findOne(id);
     }
 
@@ -82,7 +81,7 @@ export class ProfessionalsController {
     @RequirePermission('professionals', 'update')
     @UseGuards(RolePermissionGuard)
     update(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() dto: UpdateProfessionalDto
     ) {
         return this.professionals.update(id, dto);
@@ -96,7 +95,7 @@ export class ProfessionalsController {
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('professionals', 'delete')
     @UseGuards(RolePermissionGuard)
-    remove(@Param('id', ParseUUIDPipe) id: string) {
+    remove(@Param('id') id: string) {
         return this.professionals.remove(id);
     }
 
@@ -107,7 +106,7 @@ export class ProfessionalsController {
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('professionals', 'update')
     @UseGuards(RolePermissionGuard)
-    toggleStatus(@Param('id', ParseUUIDPipe) id: string) {
+    toggleStatus(@Param('id') id: string) {
         return this.professionals.toggleStatus(id);
     }
 

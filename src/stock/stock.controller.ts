@@ -7,7 +7,6 @@ import {
     Delete, 
     Param, 
     UseGuards,
-    ParseUUIDPipe,
     HttpCode,
     HttpStatus,
     Query,
@@ -80,7 +79,7 @@ export class StockController {
     @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
     @RequirePermission('products', 'read')
     @UseGuards(RolePermissionGuard)
-    findOneProduct(@Param('id', ParseUUIDPipe) id: string) {
+    findOneProduct(@Param('id') id: string) {
         return this.stockService.findOneProduct(id);
     }
 
@@ -93,7 +92,7 @@ export class StockController {
     @RequirePermission('products', 'update')
     @UseGuards(RolePermissionGuard)
     updateProduct(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() dto: UpdateProductDto
     ) {
         return this.stockService.updateProduct(id, dto);
@@ -107,7 +106,7 @@ export class StockController {
     @Roles(Role.ADMINISTRADOR)
     @RequirePermission('products', 'delete')
     @UseGuards(RolePermissionGuard)
-    removeProduct(@Param('id', ParseUUIDPipe) id: string) {
+    removeProduct(@Param('id') id: string) {
         return this.stockService.removeProduct(id);
     }
 
@@ -161,7 +160,7 @@ export class StockController {
     @RequirePermission('stock_alerts', 'update')
     @UseGuards(RolePermissionGuard)
     resolveAlert(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
         @Body() body: { notes?: string }
     ) {
         return this.stockService.resolveAlert(id, body.notes);
@@ -188,7 +187,7 @@ export class StockController {
     @RequirePermission('stock_movements', 'create')
     @UseGuards(RolePermissionGuard)
     consumeProductsForService(
-        @Param('serviceId', ParseUUIDPipe) serviceId: string,
+        @Param('serviceId') serviceId: string,
         @GetUser() user: any
     ) {
         return this.stockService.consumeProductsForService(serviceId, user.id);

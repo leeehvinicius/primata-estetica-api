@@ -252,6 +252,7 @@ model Service {
   duration        Int      // Duração em minutos
   basePrice       Decimal  @db.Decimal(10, 2)
   currentPrice    Decimal  @db.Decimal(10, 2)
+  color           String?  // Cor de destaque do serviço (hex, rgb, nome)
   isActive        Boolean  @default(true)
   requiresProfessional Boolean @default(true)
   maxConcurrentClients Int @default(1)

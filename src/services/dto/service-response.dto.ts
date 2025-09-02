@@ -44,6 +44,9 @@ export class ServiceResponseDto {
     @ApiProperty({ required: false })
     notes?: string;
 
+    @ApiProperty({ required: false, description: 'Cor do serviço (hex)' })
+    color?: string;
+
     @ApiProperty()
     isActive: boolean;
 

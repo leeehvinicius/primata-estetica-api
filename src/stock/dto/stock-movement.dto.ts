@@ -1,10 +1,10 @@
-import { IsString, IsOptional, IsEnum, IsNumber, Min, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsNumber, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { StockMovementType } from '@prisma/client';
 
 export class CreateStockMovementDto {
     @ApiProperty({ description: 'ID do produto' })
-    @IsUUID()
+    @IsString()
     productId: string;
 
     @ApiProperty({ description: 'Tipo de movimentação', enum: StockMovementType })

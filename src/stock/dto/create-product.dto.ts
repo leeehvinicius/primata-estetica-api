@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsNumber, Min, IsUUID, IsDateString, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsNumber, Min, IsDateString, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ProductUnit } from '@prisma/client';
 
@@ -13,12 +13,13 @@ export class CreateProductDto {
     description?: string;
 
     @ApiProperty({ description: 'ID da categoria do produto' })
-    @IsUUID()
-    categoryId: string;
+    @IsOptional()
+    @IsString()
+    categoryId?: string;
 
     @ApiProperty({ description: 'ID do fornecedor', required: false })
     @IsOptional()
-    @IsUUID()
+    @IsString()
     supplierId?: string;
 
     @ApiProperty({ description: 'Código SKU do produto', required: false })
