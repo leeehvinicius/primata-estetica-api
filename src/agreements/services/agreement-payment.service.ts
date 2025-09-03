@@ -291,7 +291,8 @@ export class AgreementPaymentService {
         appointmentId: paymentData.appointmentId,
         serviceId: paymentData.serviceId,
         amount: originalAmount,
-        discountAmount: discountAmount,
+        partnerDiscount: discountPercentage, // O desconto do convênio é considerado como desconto do parceiro
+        clientDiscount: 0, // Cliente não tem desconto adicional
         finalAmount: finalAmount,
         paymentMethod: paymentData.paymentMethod,
         paymentStatus: paymentData.paymentStatus || 'PENDING',

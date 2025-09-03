@@ -21,11 +21,17 @@ export class CreatePaymentDto {
     @Min(0)
     amount: number;
 
-    @ApiProperty({ description: 'Valor do desconto', required: false, default: 0 })
+    @ApiProperty({ description: 'Percentual de desconto para o parceiro (0-100)', required: false, default: 0 })
     @IsOptional()
     @IsNumber()
     @Min(0)
-    discountAmount?: number;
+    partnerDiscount?: number;
+
+    @ApiProperty({ description: 'Percentual de desconto para o cliente (0-100)', required: false, default: 0 })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    clientDiscount?: number;
 
     @ApiProperty({ description: 'Método de pagamento', enum: PaymentMethod })
     @IsEnum(PaymentMethod)

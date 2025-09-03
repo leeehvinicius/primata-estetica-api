@@ -35,9 +35,12 @@ export class PaymentsService {
             }
         }
 
-        // Calcular valor final
-        const discountAmount = dto.discountAmount || 0;
-        const finalAmount = Number(dto.amount) - Number(discountAmount);
+        // Calcular valor final com base nos percentuais de desconto
+        const partnerDiscount = dto.partnerDiscount || 0;
+        const clientDiscount = dto.clientDiscount || 0;
+        const totalDiscountPercentage = partnerDiscount + clientDiscount;
+        const discountAmount = (Number(dto.amount) * totalDiscountPercentage) / 100;
+        const finalAmount = Number(dto.amount) - discountAmount;
 
         if (finalAmount < 0) {
             throw new BadRequestException('O valor final nÃ£o pode ser negativo');
@@ -47,7 +50,8 @@ export class PaymentsService {
             clientId: dto.clientId,
             serviceId: dto.serviceId,
             amount: dto.amount,
-            discountAmount: discountAmount,
+            partnerDiscount: partnerDiscount,
+            clientDiscount: clientDiscount,
             finalAmount: finalAmount,
             paymentMethod: dto.paymentMethod,
             paymentStatus: dto.paymentStatus || 'PENDING',
@@ -304,18 +308,22 @@ export class PaymentsService {
         if (dto.appointmentId !== undefined) updateData.appointmentId = dto.appointmentId;
         if (dto.serviceId !== undefined) updateData.serviceId = dto.serviceId;
         if (dto.amount !== undefined) updateData.amount = dto.amount;
-        if (dto.discountAmount !== undefined) updateData.discountAmount = dto.discountAmount;
+        if (dto.partnerDiscount !== undefined) updateData.partnerDiscount = dto.partnerDiscount;
+        if (dto.clientDiscount !== undefined) updateData.clientDiscount = dto.clientDiscount;
         if (dto.paymentMethod !== undefined) updateData.paymentMethod = dto.paymentMethod;
         if (dto.paymentStatus !== undefined) updateData.paymentStatus = dto.paymentStatus;
         if (dto.dueDate !== undefined) updateData.dueDate = new Date(dto.dueDate);
         if (dto.notes !== undefined) updateData.notes = dto.notes;
         if (dto.transactionId !== undefined) updateData.transactionId = dto.transactionId;
 
-        // Recalcular valor final se amount ou discountAmount foram alterados
-        if (dto.amount !== undefined || dto.discountAmount !== undefined) {
+        // Recalcular valor final se amount ou percentuais de desconto foram alterados
+        if (dto.amount !== undefined || dto.partnerDiscount !== undefined || dto.clientDiscount !== undefined) {
             const newAmount = dto.amount ?? Number(existingPayment.amount);
-            const newDiscount = dto.discountAmount ?? Number(existingPayment.discountAmount);
-            const newFinalAmount = newAmount - newDiscount;
+            const newPartnerDiscount = dto.partnerDiscount ?? Number(existingPayment.partnerDiscount);
+            const newClientDiscount = dto.clientDiscount ?? Number(existingPayment.clientDiscount);
+            const totalDiscountPercentage = newPartnerDiscount + newClientDiscount;
+            const discountAmount = (newAmount * totalDiscountPercentage) / 100;
+            const newFinalAmount = newAmount - discountAmount;
 
             if (newFinalAmount < 0) {
                 throw new BadRequestException('O valor final não pode ser negativo');

@@ -39,7 +39,11 @@ export class ReportsService {
 
         // Calcular métricas financeiras
         const totalRevenue = payments.reduce((sum: number, payment: any) => sum + Number(payment.finalAmount), 0);
-        const totalDiscounts = payments.reduce((sum: number, payment: any) => sum + Number(payment.discountAmount), 0);
+        const totalDiscounts = payments.reduce((sum: number, payment: any) => {
+            const partnerDiscountAmount = (Number(payment.amount) * Number(payment.partnerDiscount || 0)) / 100;
+            const clientDiscountAmount = (Number(payment.amount) * Number(payment.clientDiscount || 0)) / 100;
+            return sum + partnerDiscountAmount + clientDiscountAmount;
+        }, 0);
         const totalTransactions = payments.length;
         const averageTicket = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 

@@ -219,7 +219,8 @@ export class AgreementsService {
     );
 
     return {
-      discountAmount: discount.discountAmount,
+      partnerDiscount: discount.discountPercentage, // O desconto do convênio é considerado como desconto do parceiro
+      clientDiscount: 0, // Cliente não tem desconto adicional
       finalAmount: originalAmount - discount.discountAmount,
       agreementId: agreement.id,
       agreement: agreement,

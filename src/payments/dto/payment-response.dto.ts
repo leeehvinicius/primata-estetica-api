@@ -18,7 +18,10 @@ export class PaymentResponseDto {
     amount: number;
 
     @ApiProperty()
-    discountAmount: number;
+    partnerDiscount: number;
+
+    @ApiProperty()
+    clientDiscount: number;
 
     @ApiProperty()
     finalAmount: number;

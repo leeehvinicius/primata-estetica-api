@@ -406,7 +406,8 @@ model Payment {
   appointmentId   String?
   serviceId       String
   amount          Decimal  @db.Decimal(10, 2)
-  discountAmount  Decimal  @db.Decimal(10, 2) @default(0)
+  partnerDiscount Decimal  @db.Decimal(5, 2) // Percentual de desconto para o parceiro (0-100)
+  clientDiscount  Decimal  @db.Decimal(5, 2) // Percentual de desconto para o cliente (0-100)
   finalAmount     Decimal  @db.Decimal(10, 2)
   currency        String   @default("BRL") // Moeda do pagamento
   paymentMethod   PaymentMethod

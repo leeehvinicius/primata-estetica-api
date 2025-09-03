@@ -42,7 +42,8 @@ export class ExternalIntegrationService {
                     serviceId: paymentData.serviceId || 'default-service-id', // Você precisa definir um serviceId padrão
                     appointmentId: paymentData.appointmentId,
                     amount: paymentData.amount,
-                    discountAmount: 0, // Valor padrão
+                    partnerDiscount: 0, // Valor padrão
+                    clientDiscount: 0, // Valor padrão
                     finalAmount: paymentData.amount,
                     paymentMethod: paymentData.paymentMethod as any, // Cast para o enum correto
                     paymentStatus: 'PENDING', // Status padrão
