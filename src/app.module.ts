@@ -15,6 +15,7 @@ import { ReportsModule } from './reports/reports.module';
 import { SecurityModule } from './security/security.module';
 import { ExternalIntegrationModule } from './external-integration/external-integration.module';
 import { AgreementsModule } from './agreements/agreements.module';
+import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AgreementsModule } from './agreements/agreements.module';
     SecurityModule,
     ExternalIntegrationModule,
     AgreementsModule,
+    TimeTrackingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
