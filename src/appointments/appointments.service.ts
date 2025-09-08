@@ -115,6 +115,7 @@ export class AppointmentsService {
                         description: true,
                         currentPrice: true,
                         duration: true,
+                        color: true,
                     }
                 },
             }
@@ -202,6 +203,7 @@ export class AppointmentsService {
                             description: true,
                             currentPrice: true,
                             duration: true,
+                            color: true,
                         }
                     },
                 }
@@ -252,6 +254,7 @@ export class AppointmentsService {
                         description: true,
                         currentPrice: true,
                         duration: true,
+                        color: true,
                     }
                 },
                 reminders: {
@@ -350,6 +353,7 @@ export class AppointmentsService {
                         description: true,
                         currentPrice: true,
                         duration: true,
+                        color: true,
                     }
                 },
             }
