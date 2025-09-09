@@ -31,6 +31,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt') {
         }
 
         const result = {
+            id: user.id,
             sub: user.id,
             email: user.email,
             profile: user.profile
