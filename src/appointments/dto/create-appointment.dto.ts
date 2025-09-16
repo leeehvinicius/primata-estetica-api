@@ -24,6 +24,11 @@ export class CreateAppointmentDto {
     @IsString()
     startTime: string;
 
+    @ApiProperty({ description: 'ID do parceiro (opcional)', required: false })
+    @IsOptional()
+    @IsString()
+    partnerId?: string;
+
     @ApiProperty({ description: 'Tipo de agendamento', enum: AppointmentType })
     @IsEnum(AppointmentType)
     appointmentType: AppointmentType;

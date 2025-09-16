@@ -50,6 +50,17 @@ export class AppointmentResponseDto {
     @ApiProperty()
     updatedAt: Date;
 
+    @ApiProperty({ required: false, description: 'Informações de preço/desconto aplicadas via parceiro' })
+    pricing?: {
+        amount: number;
+        partnerDiscountPercentage: number;
+        clientDiscountPercentage?: number;
+        fixedDiscountAmount?: number;
+        partnerDiscountAmount: number;
+        finalAmount: number;
+        partnerId?: string;
+    };
+
     // Relacionamentos
     @ApiProperty({ required: false })
     client?: any;
@@ -59,6 +70,9 @@ export class AppointmentResponseDto {
 
     @ApiProperty({ required: false })
     service?: any;
+
+    @ApiProperty({ required: false, description: 'Parceiro que indicou (quem indicou)' })
+    partner?: any;
 }
 
 export class AppointmentListResponseDto {

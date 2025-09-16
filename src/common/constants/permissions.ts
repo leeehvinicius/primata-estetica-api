@@ -45,6 +45,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'security_events', actions: ['read', 'update'] },
     { resource: 'user_sessions', actions: ['read', 'delete'] },
     { resource: 'security_configuration', actions: ['read', 'update'] },
+    // Partners module
+    { resource: 'partners', actions: ['create', 'read', 'update', 'delete'] },
   ],
   MEDICO: [
     { resource: 'patients', actions: ['read', 'update'] },
@@ -78,6 +80,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'reports', actions: ['read'] },
     { resource: 'analytics', actions: ['read'] },
     { resource: 'dashboard', actions: ['read'] },
+    // Partners module
+    { resource: 'partners', actions: ['read'] },
   ],
   RECEPCIONISTA: [
     { resource: 'patients', actions: ['create', 'read'] },
@@ -106,6 +110,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'service_products', actions: ['read'] },
     { resource: 'reports', actions: ['read'] },
     { resource: 'dashboard', actions: ['read'] },
+    // Partners module
+    { resource: 'partners', actions: ['create', 'read', 'update'] },
   ],
   TÉCNICO_DE_ENFERMAGEM: [
     { resource: 'patients', actions: ['read', 'update'] },

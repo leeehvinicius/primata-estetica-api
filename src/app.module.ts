@@ -14,7 +14,8 @@ import { StockModule } from './stock/stock.module';
 import { ReportsModule } from './reports/reports.module';
 import { SecurityModule } from './security/security.module';
 import { ExternalIntegrationModule } from './external-integration/external-integration.module';
-import { AgreementsModule } from './agreements/agreements.module';
+// Removido AgreementsModule; substituído por PartnersModule simples
+import { PartnersModule } from './partners/partners.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 
 @Module({
@@ -34,7 +35,7 @@ import { TimeTrackingModule } from './time-tracking/time-tracking.module';
     ReportsModule,
     SecurityModule,
     ExternalIntegrationModule,
-    AgreementsModule,
+    PartnersModule,
     TimeTrackingModule,
   ],
   controllers: [AppController],

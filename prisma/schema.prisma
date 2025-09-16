@@ -69,6 +69,9 @@ model User {
   generatedReports        TimeTrackingReport[]     @relation("ReportGenerator")
   approvedReports         TimeTrackingReport[]     @relation("ReportApprover")
   TimeTrackingReport      TimeTrackingReport[]
+
+  // Relações de parceiros
+  partners Partner[]
 }
 
 model Profile {
@@ -367,6 +370,7 @@ model Appointment {
   clientId           String
   professionalId     String?
   serviceId          String
+  partnerId          String?
   scheduledDate      DateTime
   startTime          String // HH:MM
   endTime            String // HH:MM
@@ -386,6 +390,7 @@ model Appointment {
   professional Professional?         @relation(fields: [professionalId], references: [id])
   service      Service               @relation(fields: [serviceId], references: [id])
   user         User                  @relation(fields: [createdBy], references: [id])
+  partner      Partner?              @relation(fields: [partnerId], references: [id])
   reminders    AppointmentReminder[]
   payments     Payment[]
 }
@@ -696,6 +701,31 @@ enum DiscountType {
   PERCENTAGE // Desconto percentual
   FIXED // Desconto fixo em valor
   FREE // Grátis
+}
+
+// ===== MÓDULO DE PARCEIROS SIMPLES =====
+
+enum DocumentType {
+  CPF
+  CNPJ
+}
+
+model Partner {
+  id              String   @id @default(cuid())
+  name            String
+  documentType    DocumentType
+  document        String   @unique
+  partnerDiscount Decimal  @db.Decimal(5, 2)
+  clientDiscount  Decimal  @db.Decimal(5, 2)
+  fixedDiscount   Decimal? @db.Decimal(10, 2)
+  notes           String?
+  isActive        Boolean  @default(true)
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [createdBy], references: [id])
+  appointments Appointment[]
 }
 
 enum PromotionType {

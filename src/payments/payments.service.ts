@@ -93,6 +93,11 @@ export class PaymentsService {
                         scheduledDate: true,
                         startTime: true,
                         endTime: true,
+                        partner: {
+                            select: {
+                                name: true,
+                            }
+                        }
                     }
                 },
                 service: {
@@ -209,8 +214,13 @@ export class PaymentsService {
         const hasNext = page < totalPages;
         const hasPrev = page > 1;
 
+        const paymentsWithPartner = payments.map((p: any) => ({
+            ...p,
+            partnerName: p.appointment?.partner?.name || null,
+        }));
+
         return {
-            payments,
+            payments: paymentsWithPartner,
             total,
             page,
             limit,
@@ -238,6 +248,11 @@ export class PaymentsService {
                         scheduledDate: true,
                         startTime: true,
                         endTime: true,
+                        partner: {
+                            select: {
+                                name: true,
+                            }
+                        }
                     }
                 },
                 service: {

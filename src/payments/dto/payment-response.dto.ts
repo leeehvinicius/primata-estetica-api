@@ -62,6 +62,9 @@ export class PaymentResponseDto {
 
     @ApiProperty({ required: false })
     service?: any;
+
+    @ApiProperty({ required: false, description: 'Nome do parceiro associado ao agendamento (se houver)' })
+    partnerName?: string;
 }
 
 export class PaymentListResponseDto {

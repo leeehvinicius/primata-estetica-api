@@ -19,9 +19,24 @@ POST /api/appointments
   "serviceId": "service123",
   "scheduledDate": "2024-12-25",
   "startTime": "14:00",
+  "agreementId": "agreement123",
   "appointmentType": "CONSULTATION",
   "priority": "NORMAL",
   "notes": "Primeira consulta"
+}
+```
+
+Se "agreementId" for informado, o sistema calculará automaticamente o desconto do parceiro (convênio) para o serviço com base nas regras de desconto cadastradas e retornará no objeto do agendamento o campo "pricing" com:
+
+```json
+{
+  "pricing": {
+    "amount": 200.00,
+    "partnerDiscountPercentage": 20.00,
+    "partnerDiscountAmount": 40.00,
+    "finalAmount": 160.00,
+    "agreementId": "agreement123"
+  }
 }
 ```
 

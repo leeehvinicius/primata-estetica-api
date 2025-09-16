@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+// Parceiros: desconto simples configurado no parceiro
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -118,8 +119,41 @@ export class AppointmentsService {
                         color: true,
                     }
                 },
+                partner: {
+                    select: {
+                        id: true,
+                        name: true,
+                        document: true,
+                        partnerDiscount: true,
+                        clientDiscount: true,
+                        fixedDiscount: true,
+                    }
+                },
             }
         });
+
+        // Se houver parceiro informado, gravar e calcular desconto baseado nos percentuais/valor fixo do parceiro
+        if (dto.partnerId) {
+            appointmentData.partnerId = dto.partnerId;
+            try {
+                const baseAmount = Number(appointment.service.currentPrice);
+                const partner = await (this.prisma as any).partner.findFirst({ where: { id: dto.partnerId, isActive: true } });
+                if (partner) {
+                    const fixedDiscount = partner.fixedDiscount ? Number(partner.fixedDiscount) : 0;
+                    const percentageDiscount = ((Number(partner.partnerDiscount) + Number(partner.clientDiscount)) / 100) * baseAmount;
+                    const discountAmount = fixedDiscount > 0 ? Math.min(fixedDiscount, baseAmount) : percentageDiscount;
+                    (appointment as any).pricing = {
+                        amount: baseAmount,
+                        partnerDiscountPercentage: Number(partner.partnerDiscount),
+                        clientDiscountPercentage: Number(partner.clientDiscount),
+                        fixedDiscountAmount: fixedDiscount,
+                        partnerDiscountAmount: discountAmount,
+                        finalAmount: Math.max(0, baseAmount - discountAmount),
+                        partnerId: dto.partnerId,
+                    };
+                }
+            } catch {}
+        }
 
         // Criar lembretes automáticos
         await this.createAutomaticReminders(appointment.id, userId, dto.notificationChannels);
@@ -128,7 +162,9 @@ export class AppointmentsService {
     }
 
     async findAll(query: ListAppointmentsDto) {
-        const { page = 1, limit = 10, clientName, professionalName, appointmentType, status, priority, startDate, endDate, sortBy = 'scheduledDate', sortOrder = 'asc' } = query;
+        const { page = 1, limit = 10, clientName, professionalName, appointmentType, status, priority, sortBy = 'scheduledDate', sortOrder = 'asc' } = query;
+        const startDate = (query as any).startDate || (query as any).dateFrom;
+        const endDate = (query as any).endDate || (query as any).dateTo;
         const skip = (page - 1) * limit;
 
         // Construir filtros
@@ -206,17 +242,58 @@ export class AppointmentsService {
                             color: true,
                         }
                     },
+                    partner: {
+                        select: {
+                            id: true,
+                            name: true,
+                            document: true,
+                        }
+                    },
                 }
             }),
             (this.prisma as any).appointment.count({ where })
         ]);
+
+        const enrichedAppointments = await Promise.all(appointments.map(async (appt: any) => {
+            try {
+                if (appt.partner && appt.service?.currentPrice) {
+                    // Fallback: se descontos não vieram no include, buscar rapidamente
+                    if (
+                        typeof appt.partner.partnerDiscount === 'undefined' ||
+                        typeof appt.partner.clientDiscount === 'undefined' ||
+                        typeof appt.partner.fixedDiscount === 'undefined'
+                    ) {
+                        const fullPartner = await (this.prisma as any).partner.findUnique({
+                            where: { id: appt.partner.id },
+                            select: { partnerDiscount: true, clientDiscount: true, fixedDiscount: true }
+                        });
+                        appt.partner = { ...appt.partner, ...fullPartner };
+                    }
+
+                    const baseAmount = Number(appt.service.currentPrice);
+                    const fixedDiscount = appt.partner.fixedDiscount ? Number(appt.partner.fixedDiscount) : 0;
+                    const percentageDiscount = ((Number(appt.partner.partnerDiscount) + Number(appt.partner.clientDiscount)) / 100) * baseAmount;
+                    const discountAmount = fixedDiscount > 0 ? Math.min(fixedDiscount, baseAmount) : percentageDiscount;
+                    (appt as any).pricing = {
+                        amount: baseAmount,
+                        partnerDiscountPercentage: Number(appt.partner.partnerDiscount),
+                        clientDiscountPercentage: Number(appt.partner.clientDiscount),
+                        fixedDiscountAmount: fixedDiscount,
+                        partnerDiscountAmount: discountAmount,
+                        finalAmount: Math.max(0, baseAmount - discountAmount),
+                        partnerId: appt.partner?.id,
+                    };
+                }
+            } catch {}
+            return appt;
+        }));
 
         const totalPages = Math.ceil(total / limit);
         const hasNext = page < totalPages;
         const hasPrev = page > 1;
 
         return {
-            appointments,
+            appointments: enrichedAppointments,
             total,
             page,
             limit,
@@ -257,6 +334,16 @@ export class AppointmentsService {
                         color: true,
                     }
                 },
+                partner: {
+                    select: {
+                        id: true,
+                        name: true,
+                        document: true,
+                        partnerDiscount: true,
+                        clientDiscount: true,
+                        fixedDiscount: true,
+                    }
+                },
                 reminders: {
                     orderBy: { scheduledFor: 'asc' }
                 }
@@ -266,6 +353,36 @@ export class AppointmentsService {
         if (!appointment) {
             throw new NotFoundException('Agendamento não encontrado');
         }
+
+        try {
+            if ((appointment as any).partner && (appointment as any).service?.currentPrice) {
+                if (
+                    typeof (appointment as any).partner.partnerDiscount === 'undefined' ||
+                    typeof (appointment as any).partner.clientDiscount === 'undefined' ||
+                    typeof (appointment as any).partner.fixedDiscount === 'undefined'
+                ) {
+                    const fullPartner = await (this.prisma as any).partner.findUnique({
+                        where: { id: (appointment as any).partner.id },
+                        select: { partnerDiscount: true, clientDiscount: true, fixedDiscount: true }
+                    });
+                    (appointment as any).partner = { ...(appointment as any).partner, ...fullPartner };
+                }
+
+                const baseAmount = Number((appointment as any).service.currentPrice);
+                const fixedDiscount = (appointment as any).partner.fixedDiscount ? Number((appointment as any).partner.fixedDiscount) : 0;
+                const percentageDiscount = ((Number((appointment as any).partner.partnerDiscount) + Number((appointment as any).partner.clientDiscount)) / 100) * baseAmount;
+                const discountAmount = fixedDiscount > 0 ? Math.min(fixedDiscount, baseAmount) : percentageDiscount;
+                (appointment as any).pricing = {
+                    amount: baseAmount,
+                    partnerDiscountPercentage: Number((appointment as any).partner.partnerDiscount),
+                    clientDiscountPercentage: Number((appointment as any).partner.clientDiscount),
+                    fixedDiscountAmount: fixedDiscount,
+                    partnerDiscountAmount: discountAmount,
+                    finalAmount: Math.max(0, baseAmount - discountAmount),
+                    partnerId: (appointment as any).partner?.id,
+                };
+            }
+        } catch {}
 
         return appointment;
     }
@@ -307,6 +424,7 @@ export class AppointmentsService {
         if (dto.serviceId !== undefined) updateData.serviceId = dto.serviceId;
         if (dto.scheduledDate !== undefined) updateData.scheduledDate = new Date(dto.scheduledDate);
         if (dto.startTime !== undefined) updateData.startTime = dto.startTime;
+        if (dto.partnerId !== undefined) updateData.partnerId = dto.partnerId;
         if (dto.appointmentType !== undefined) updateData.appointmentType = dto.appointmentType;
         if (dto.priority !== undefined) updateData.priority = dto.priority;
         if (dto.status !== undefined) updateData.status = dto.status;

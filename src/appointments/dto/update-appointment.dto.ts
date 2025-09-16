@@ -28,6 +28,11 @@ export class UpdateAppointmentDto {
     @IsString()
     startTime?: string;
 
+    @ApiProperty({ description: 'ID do parceiro (quem indicou)', required: false })
+    @IsOptional()
+    @IsString()
+    partnerId?: string;
+
     @ApiProperty({ description: 'Tipo de agendamento', enum: AppointmentType, required: false })
     @IsOptional()
     @IsEnum(AppointmentType)
