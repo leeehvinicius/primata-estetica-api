@@ -9,7 +9,8 @@ export class AgreementDiscountService {
     agreementId: string;
     serviceId?: string;
     packageId?: string;
-    discountPercentage: number;
+    discountPercentage?: number;
+    discountValue?: number;
     isActive?: boolean;
   }) {
     // Verifica se o convênio existe
@@ -43,9 +44,21 @@ export class AgreementDiscountService {
       }
     }
 
-    // Verifica se o percentual de desconto é válido
-    if (data.discountPercentage < 0 || data.discountPercentage > 100) {
-      throw new BadRequestException('Percentual de desconto deve estar entre 0 e 100');
+    // Regras de validação para desconto: aceitar percentual OU valor fixo
+    if ((data.discountPercentage === undefined || data.discountPercentage === null) && (data.discountValue === undefined || data.discountValue === null)) {
+      throw new BadRequestException('Informe discountPercentage (0-100) ou discountValue (> 0)');
+    }
+
+    if (data.discountPercentage !== undefined && data.discountPercentage !== null) {
+      if (data.discountPercentage < 0 || data.discountPercentage > 100) {
+        throw new BadRequestException('Percentual de desconto deve estar entre 0 e 100');
+      }
+    }
+
+    if (data.discountValue !== undefined && data.discountValue !== null) {
+      if (data.discountValue < 0) {
+        throw new BadRequestException('Valor de desconto deve ser maior ou igual a 0');
+      }
     }
 
     // Verifica se já existe um desconto para este convênio, serviço e pacote
@@ -61,14 +74,20 @@ export class AgreementDiscountService {
       throw new BadRequestException('Já existe um desconto configurado para este convênio, serviço e pacote');
     }
 
+    const createData: any = {
+      agreementId: data.agreementId,
+      serviceId: data.serviceId,
+      packageId: data.packageId,
+      discountPercentage: data.discountPercentage ?? 0,
+      isActive: data.isActive ?? true,
+    };
+
+    if (data.discountValue !== undefined) {
+      createData.discountValue = data.discountValue;
+    }
+
     return this.prisma.agreementDiscount.create({
-      data: {
-        agreementId: data.agreementId,
-        serviceId: data.serviceId,
-        packageId: data.packageId,
-        discountPercentage: data.discountPercentage,
-        isActive: data.isActive ?? true,
-      },
+      data: createData,
       include: {
         agreement: {
           include: {
@@ -119,13 +138,22 @@ export class AgreementDiscountService {
 
   async update(id: string, data: {
     discountPercentage?: number;
+    discountValue?: number | null;
     isActive?: boolean;
   }) {
     await this.findById(id); // Verifica se existe
 
-    // Verifica se o percentual de desconto é válido
-    if (data.discountPercentage !== undefined && (data.discountPercentage < 0 || data.discountPercentage > 100)) {
-      throw new BadRequestException('Percentual de desconto deve estar entre 0 e 100');
+    // Validações
+    if (data.discountPercentage !== undefined) {
+      if (data.discountPercentage < 0 || data.discountPercentage > 100) {
+        throw new BadRequestException('Percentual de desconto deve estar entre 0 e 100');
+      }
+    }
+
+    if (data.discountValue !== undefined && data.discountValue !== null) {
+      if (data.discountValue < 0) {
+        throw new BadRequestException('Valor de desconto deve ser maior ou igual a 0');
+      }
     }
 
     return this.prisma.agreementDiscount.update({
@@ -207,12 +235,21 @@ export class AgreementDiscountService {
       };
     }
 
-    const discountAmount = (amount * Number(discount.discountPercentage)) / 100;
+    // Calcula por valor fixo (se existir) senão por percentual
+    const discountValue = (discount as any).discountValue !== undefined && (discount as any).discountValue !== null
+      ? Number((discount as any).discountValue)
+      : null;
+
+    const discountAmount = discountValue !== null
+      ? Math.min(discountValue, amount)
+      : (amount * Number(discount.discountPercentage)) / 100;
 
     return {
       discountAmount,
       discountPercentage: Number(discount.discountPercentage),
-      message: `Desconto de ${discount.discountPercentage}% aplicado`,
+      message: discountValue !== null
+        ? `Desconto de R$ ${discountValue.toFixed(2)} aplicado`
+        : `Desconto de ${discount.discountPercentage}% aplicado`,
       agreement: agreement,
       discount: discount,
     };
@@ -264,12 +301,20 @@ export class AgreementDiscountService {
       };
     }
 
-    const discountAmount = (amount * Number(discount.discountPercentage)) / 100;
+    const discountValue = (discount as any).discountValue !== undefined && (discount as any).discountValue !== null
+      ? Number((discount as any).discountValue)
+      : null;
+
+    const discountAmount = discountValue !== null
+      ? Math.min(discountValue, amount)
+      : (amount * Number(discount.discountPercentage)) / 100;
 
     return {
       discountAmount,
       discountPercentage: Number(discount.discountPercentage),
-      message: `Desconto de ${discount.discountPercentage}% aplicado`,
+      message: discountValue !== null
+        ? `Desconto de R$ ${discountValue.toFixed(2)} aplicado`
+        : `Desconto de ${discount.discountPercentage}% aplicado`,
       agreement: agreement,
       discount: discount,
     };

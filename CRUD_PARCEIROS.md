@@ -113,6 +113,7 @@ POST /api/agreements/agreements/{agreementId}/discounts
   "serviceId": "service123",
   "packageId": "package123",
   "discountPercentage": 20.00,
+  "discountValue": 0,
   "isActive": true
 }
 ```
@@ -130,6 +131,7 @@ PUT /api/agreements/discounts/{id}
 ```json
 {
   "discountPercentage": 25.00,
+  "discountValue": 10.00,
   "isActive": true
 }
 ```
@@ -422,6 +424,7 @@ POST /api/agreements/check-coverage
 - `serviceId` - ID do serviço (opcional)
 - `packageId` - ID do pacote (opcional)
 - `discountPercentage` - Percentual de desconto (0-100)
+- `discountValue` - Valor fixo de desconto (opcional)
 - `isActive` - Status ativo/inativo
 - `createdAt` - Data de criação
 - `updatedAt` - Data de atualização

@@ -35,12 +35,13 @@ export class PaymentsService {
             }
         }
 
-        // Calcular valor final com base nos percentuais de desconto
+        // Calcular valor final com base nos percentuais de desconto e valor adicional
         const partnerDiscount = dto.partnerDiscount || 0;
         const clientDiscount = dto.clientDiscount || 0;
         const totalDiscountPercentage = partnerDiscount + clientDiscount;
         const discountAmount = (Number(dto.amount) * totalDiscountPercentage) / 100;
-        const finalAmount = Number(dto.amount) - discountAmount;
+        const additionalValue = dto.additionalValue || 0;
+        const finalAmount = Number(dto.amount) - discountAmount + additionalValue;
 
         if (finalAmount < 0) {
             throw new BadRequestException('O valor final nÃ£o pode ser negativo');
@@ -52,6 +53,7 @@ export class PaymentsService {
             amount: dto.amount,
             partnerDiscount: partnerDiscount,
             clientDiscount: clientDiscount,
+            additionalValue: additionalValue || undefined,
             finalAmount: finalAmount,
             paymentMethod: dto.paymentMethod,
             paymentStatus: dto.paymentStatus || 'PENDING',
@@ -317,13 +319,14 @@ export class PaymentsService {
         if (dto.transactionId !== undefined) updateData.transactionId = dto.transactionId;
 
         // Recalcular valor final se amount ou percentuais de desconto foram alterados
-        if (dto.amount !== undefined || dto.partnerDiscount !== undefined || dto.clientDiscount !== undefined) {
+        if (dto.amount !== undefined || dto.partnerDiscount !== undefined || dto.clientDiscount !== undefined || dto.additionalValue !== undefined) {
             const newAmount = dto.amount ?? Number(existingPayment.amount);
             const newPartnerDiscount = dto.partnerDiscount ?? Number(existingPayment.partnerDiscount);
             const newClientDiscount = dto.clientDiscount ?? Number(existingPayment.clientDiscount);
             const totalDiscountPercentage = newPartnerDiscount + newClientDiscount;
             const discountAmount = (newAmount * totalDiscountPercentage) / 100;
-            const newFinalAmount = newAmount - discountAmount;
+            const newAdditionalValue = dto.additionalValue ?? Number(existingPayment.additionalValue || 0);
+            const newFinalAmount = newAmount - discountAmount + newAdditionalValue;
 
             if (newFinalAmount < 0) {
                 throw new BadRequestException('O valor final não pode ser negativo');

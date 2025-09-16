@@ -33,6 +33,12 @@ export class CreatePaymentDto {
     @Min(0)
     clientDiscount?: number;
 
+    @ApiProperty({ description: 'Valor adicional a somar após descontos', required: false, default: 0 })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    additionalValue?: number;
+
     @ApiProperty({ description: 'Método de pagamento', enum: PaymentMethod })
     @IsEnum(PaymentMethod)
     paymentMethod: PaymentMethod;
