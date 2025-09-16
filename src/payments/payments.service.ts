@@ -325,7 +325,7 @@ export class PaymentsService {
             const newClientDiscount = dto.clientDiscount ?? Number(existingPayment.clientDiscount);
             const totalDiscountPercentage = newPartnerDiscount + newClientDiscount;
             const discountAmount = (newAmount * totalDiscountPercentage) / 100;
-            const newAdditionalValue = dto.additionalValue ?? Number(existingPayment.additionalValue || 0);
+            const newAdditionalValue = dto.additionalValue ?? Number((existingPayment as any).additionalValue || 0);
             const newFinalAmount = newAmount - discountAmount + newAdditionalValue;
 
             if (newFinalAmount < 0) {
