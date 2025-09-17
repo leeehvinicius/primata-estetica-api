@@ -107,6 +107,7 @@ export class PaymentsService {
                         description: true,
                         currentPrice: true,
                         duration: true,
+                        color: true,
                     }
                 },
             }
@@ -203,6 +204,7 @@ export class PaymentsService {
                             description: true,
                             currentPrice: true,
                             duration: true,
+                            color: true,
                         }
                     },
                 }
@@ -262,6 +264,7 @@ export class PaymentsService {
                         description: true,
                         currentPrice: true,
                         duration: true,
+                        color: true,
                     }
                 },
                 receipts: {
@@ -377,6 +380,7 @@ export class PaymentsService {
                         description: true,
                         currentPrice: true,
                         duration: true,
+                        color: true,
                     }
                 },
             }
