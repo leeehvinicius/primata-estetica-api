@@ -42,8 +42,17 @@ async function main() {
     // Set a default category for services without one (after migration)
     const defaultCategory = await prisma.serviceCategory.findFirst({ where: { name: { equals: 'Outros', mode: 'insensitive' } } })
     if (defaultCategory) {
+        // Ajustar registros legados: primeiro definir onde está NULL via SQL bruto
+        try {
+            await (prisma as any).$executeRawUnsafe(
+                'UPDATE "Service" SET "serviceCategoryId" = $1 WHERE "serviceCategoryId" IS NULL',
+                (defaultCategory as any).id
+            )
+        } catch {}
+
+        // Depois tratar strings vazias via client tipado
         await prisma.service.updateMany({
-            where: { OR: [{ serviceCategoryId: null }, { serviceCategoryId: '' }] },
+            where: { serviceCategoryId: '' as any },
             data: { serviceCategoryId: (defaultCategory as any).id }
         })
     }
