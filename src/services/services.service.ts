@@ -35,9 +35,15 @@ export class ServicesService {
             }
         }
 
+        // Validar categoria
+        const category = await (this.prisma as any).serviceCategory.findUnique({ where: { id: dto.serviceCategoryId } });
+        if (!category) {
+            throw new NotFoundException('Categoria de serviço não encontrada');
+        }
+
         const serviceData: any = {
             name: dto.name,
-            category: dto.category,
+            serviceCategoryId: dto.serviceCategoryId,
             duration: dto.duration,
             basePrice: dto.basePrice,
             currentPrice: dto.currentPrice,
@@ -58,11 +64,12 @@ export class ServicesService {
 
         return (this.prisma as any).service.create({
             data: serviceData,
+            include: { category: { select: { id: true, name: true } } }
         });
     }
 
     async findAll(query: ListServicesDto) {
-        const { page = 1, limit = 10, search, category, isActive, minPrice, maxPrice, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+        const { page = 1, limit = 10, search, serviceCategoryId, isActive, minPrice, maxPrice, sortBy = 'createdAt', sortOrder = 'desc' } = query;
         const skip = (page - 1) * limit;
 
         // Construir filtros
@@ -75,8 +82,8 @@ export class ServicesService {
             ];
         }
 
-        if (category) {
-            where.category = category;
+        if (serviceCategoryId) {
+            where.serviceCategoryId = serviceCategoryId;
         }
 
         if (isActive !== undefined) {
@@ -90,7 +97,7 @@ export class ServicesService {
         }
 
         // Validar campo de ordenação
-        const allowedSortFields = ['name', 'category', 'currentPrice', 'duration', 'createdAt', 'updatedAt'];
+        const allowedSortFields = ['name', 'currentPrice', 'duration', 'createdAt', 'updatedAt'];
         const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
         // Construir ordenação
@@ -103,6 +110,7 @@ export class ServicesService {
                 orderBy,
                 skip,
                 take: limit,
+                include: { category: { select: { id: true, name: true } } }
             }),
             (this.prisma as any).service.count({ where })
         ]);
@@ -125,6 +133,7 @@ export class ServicesService {
     async findOne(id: string) {
         const service = await (this.prisma as any).service.findUnique({
             where: { id },
+            include: { category: { select: { id: true, name: true } } }
         });
 
         if (!service) {
@@ -163,7 +172,11 @@ export class ServicesService {
         // Adicionar campos que foram fornecidos
         if (dto.name !== undefined) updateData.name = dto.name;
         if (dto.description !== undefined) updateData.description = dto.description;
-        if (dto.category !== undefined) updateData.category = dto.category;
+        if (dto.serviceCategoryId !== undefined) {
+            const category = await (this.prisma as any).serviceCategory.findUnique({ where: { id: dto.serviceCategoryId } });
+            if (!category) throw new NotFoundException('Categoria de serviço não encontrada');
+            updateData.serviceCategoryId = dto.serviceCategoryId;
+        }
         if (dto.duration !== undefined) updateData.duration = dto.duration;
         if (dto.basePrice !== undefined) updateData.basePrice = dto.basePrice;
         if (dto.currentPrice !== undefined) updateData.currentPrice = dto.currentPrice;
@@ -180,6 +193,7 @@ export class ServicesService {
         return (this.prisma as any).service.update({
             where: { id },
             data: updateData,
+            include: { category: { select: { id: true, name: true } } }
         });
     }
 
@@ -222,8 +236,8 @@ export class ServicesService {
             (this.prisma as any).service.count({ where: { isActive: true } }),
             (this.prisma as any).service.count({ where: { isActive: false } }),
             (this.prisma as any).service.groupBy({
-                by: ['category'],
-                _count: { category: true }
+                by: ['serviceCategoryId'],
+                _count: { serviceCategoryId: true }
             }),
             (this.prisma as any).service.count({
                 where: { createdAt: { gte: startOfMonth } }
@@ -242,7 +256,7 @@ export class ServicesService {
 
         const categoryStats: any = {};
         byCategory.forEach((stat: any) => {
-            categoryStats[stat.category] = stat._count.category;
+            categoryStats[stat.serviceCategoryId] = stat._count.serviceCategoryId;
         });
 
         return {
@@ -267,7 +281,7 @@ export class ServicesService {
                 id: true,
                 name: true,
                 description: true,
-                category: true,
+                serviceCategoryId: true,
                 currentPrice: true,
                 duration: true,
             },
@@ -275,17 +289,17 @@ export class ServicesService {
         });
     }
 
-    async searchByCategory(category: string) {
+    async searchByCategory(serviceCategoryId: string) {
         return (this.prisma as any).service.findMany({
             where: {
-                category: { equals: category, mode: 'insensitive' },
+                serviceCategoryId,
                 isActive: true,
             },
             select: {
                 id: true,
                 name: true,
                 description: true,
-                category: true,
+                serviceCategoryId: true,
                 currentPrice: true,
                 duration: true,
             },
@@ -306,7 +320,7 @@ export class ServicesService {
                 id: true,
                 name: true,
                 description: true,
-                category: true,
+                serviceCategoryId: true,
                 currentPrice: true,
                 duration: true,
             },
@@ -326,11 +340,85 @@ export class ServicesService {
                 id: true,
                 name: true,
                 description: true,
-                category: true,
+                serviceCategoryId: true,
                 currentPrice: true,
                 duration: true,
             },
             orderBy: { duration: 'asc' },
         });
+    }
+
+    // ===== CATEGORIAS DE SERVIÇO =====
+    async createServiceCategory(dto: any, userId: string) {
+        const existing = await (this.prisma as any).serviceCategory.findFirst({ where: { name: { equals: dto.name, mode: 'insensitive' } } });
+        if (existing) throw new ConflictException('Já existe uma categoria de serviço com este nome');
+        return (this.prisma as any).serviceCategory.create({
+            data: { name: dto.name, description: dto.description, isActive: dto.isActive ?? true, createdBy: userId }
+        });
+    }
+
+    async listServiceCategories(query: any) {
+        const { page = 1, limit = 10, name, isActive, sortBy = 'name', sortOrder = 'asc' } = query;
+        const skip = (page - 1) * limit;
+        const where: any = {};
+        if (name) where.name = { contains: name, mode: 'insensitive' };
+        if (isActive !== undefined) where.isActive = isActive;
+        const allowed = ['name', 'createdAt', 'updatedAt', 'isActive'];
+        const validSortBy = allowed.includes(sortBy) ? sortBy : 'name';
+        const orderBy: any = {}; orderBy[validSortBy] = sortOrder;
+
+        const [items, total] = await Promise.all([
+            (this.prisma as any).serviceCategory.findMany({ where, orderBy, skip, take: limit, include: { _count: { select: { services: true } } } }),
+            (this.prisma as any).serviceCategory.count({ where }),
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
+        return {
+            categories: items.map((c: any) => ({ ...c, serviceCount: c._count?.services ?? 0 })),
+            total,
+            page,
+            limit,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+        };
+    }
+
+    async getServiceCategory(id: string) {
+        const cat = await (this.prisma as any).serviceCategory.findUnique({ where: { id }, include: { _count: { select: { services: true } } } });
+        if (!cat) throw new NotFoundException('Categoria de serviço não encontrada');
+        return { ...cat, serviceCount: cat._count?.services ?? 0 };
+    }
+
+    async updateServiceCategory(id: string, dto: any) {
+        const existing = await (this.prisma as any).serviceCategory.findUnique({ where: { id } });
+        if (!existing) throw new NotFoundException('Categoria de serviço não encontrada');
+        if (dto.name && dto.name.toLowerCase() !== existing.name.toLowerCase()) {
+            const nameTaken = await (this.prisma as any).serviceCategory.findFirst({ where: { name: { equals: dto.name, mode: 'insensitive' }, NOT: { id } } });
+            if (nameTaken) throw new ConflictException('Já existe uma categoria de serviço com este nome');
+        }
+        return (this.prisma as any).serviceCategory.update({
+            where: { id },
+            data: { 
+                name: dto.name ?? existing.name,
+                description: dto.description ?? existing.description,
+                isActive: dto.isActive ?? existing.isActive,
+            }
+        });
+    }
+
+    async removeServiceCategory(id: string) {
+        const existing = await (this.prisma as any).serviceCategory.findUnique({ where: { id } });
+        if (!existing) throw new NotFoundException('Categoria de serviço não encontrada');
+        const count = await (this.prisma as any).service.count({ where: { serviceCategoryId: id } });
+        if (count > 0) throw new ConflictException('Não é possível deletar categoria com serviços vinculados');
+        await (this.prisma as any).serviceCategory.delete({ where: { id } });
+        return { message: 'Categoria deletada com sucesso' };
+    }
+
+    async toggleServiceCategoryStatus(id: string) {
+        const existing = await (this.prisma as any).serviceCategory.findUnique({ where: { id } });
+        if (!existing) throw new NotFoundException('Categoria de serviço não encontrada');
+        return (this.prisma as any).serviceCategory.update({ where: { id }, data: { isActive: !existing.isActive } });
     }
 }

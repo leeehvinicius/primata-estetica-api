@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ServiceCategory } from '@prisma/client';
 
 export class ServiceResponseDto {
     @ApiProperty()
@@ -11,8 +10,11 @@ export class ServiceResponseDto {
     @ApiProperty({ required: false })
     description?: string;
 
-    @ApiProperty({ enum: ServiceCategory })
-    category: ServiceCategory;
+    @ApiProperty({ description: 'ID da categoria do serviço' })
+    serviceCategoryId: string;
+
+    @ApiProperty({ required: false, description: 'Categoria do serviço' })
+    category?: { id: string; name: string };
 
     @ApiProperty()
     duration: number;
@@ -90,8 +92,8 @@ export class ServiceStatsResponseDto {
     @ApiProperty()
     inactive: number;
 
-    @ApiProperty()
-    byCategory: Record<ServiceCategory, number>;
+    @ApiProperty({ description: 'Quantidade por categoria (chave = categoryId ou nome)' })
+    byCategory: Record<string, number>;
 
     @ApiProperty()
     averagePrice: number;

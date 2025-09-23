@@ -262,7 +262,7 @@ model Service {
   id                   String          @id @default(cuid())
   name                 String
   description          String?
-  category             ServiceCategory
+  serviceCategoryId    String
   duration             Int // Duração em minutos
   basePrice            Decimal         @db.Decimal(10, 2)
   currentPrice         Decimal         @db.Decimal(10, 2)
@@ -289,6 +289,7 @@ model Service {
   coverageLimits     CoverageLimit[] // Limites de cobertura
   coverageAlerts     CoverageAlert[] // Alertas de cobertura
   user               User                   @relation(fields: [createdBy], references: [id])
+  category           ServiceCategory        @relation(fields: [serviceCategoryId], references: [id])
 }
 
 model ServicePackage {
@@ -686,15 +687,18 @@ enum DayOfWeek {
   SUNDAY
 }
 
-enum ServiceCategory {
-  FACIAL_TREATMENT // Tratamentos faciais
-  BODY_TREATMENT // Tratamentos corporais
-  HAIR_REMOVAL // Depilação
-  SKIN_CLEANING // Limpeza de pele
-  AESTHETIC_PROCEDURE // Procedimentos estéticos
-  CONSULTATION // Consultas
-  MAINTENANCE // Manutenção
-  OTHER // Outros
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  services Service[]
+  user     User     @relation(fields: [createdBy], references: [id])
 }
 
 enum DiscountType {

@@ -2,6 +2,55 @@
 
 ## **📋 ENDPOINTS**
 
+### CATEGORIAS DE PRODUTOS (Estoque)
+
+#### Criar categoria
+```bash
+curl -X POST http://localhost:3000/api/stock/categories \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {access_token}" \
+  -d '{
+    "name": "Dermocosméticos",
+    "description": "Produtos de cuidados com a pele",
+    "isActive": true
+  }'
+```
+
+#### Listar categorias
+```bash
+curl -X GET "http://localhost:3000/api/stock/categories?name=dermo&isActive=true&page=1&limit=10" \
+  -H "Authorization: Bearer {access_token}"
+```
+
+#### Buscar categoria por ID
+```bash
+curl -X GET http://localhost:3000/api/stock/categories/{category_id} \
+  -H "Authorization: Bearer {access_token}"
+```
+
+#### Atualizar categoria
+```bash
+curl -X PUT http://localhost:3000/api/stock/categories/{category_id} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {access_token}" \
+  -d '{
+    "name": "Dermocosméticos Premium",
+    "isActive": true
+  }'
+```
+
+#### Alternar status da categoria
+```bash
+curl -X PATCH http://localhost:3000/api/stock/categories/{category_id}/toggle-status \
+  -H "Authorization: Bearer {access_token}"
+```
+
+#### Deletar categoria
+```bash
+curl -X DELETE http://localhost:3000/api/stock/categories/{category_id} \
+  -H "Authorization: Bearer {access_token}"
+```
+
 ### **1. CRIAR PAGAMENTO - Cadastrar Novo Pagamento**
 ```bash
 curl -X POST http://localhost:3000/api/payments \

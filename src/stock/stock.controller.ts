@@ -17,7 +17,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ListProductsDto } from './dto/list-products.dto';
 import { CreateStockMovementDto } from './dto/stock-movement.dto';
-import { ProductResponseDto, ProductListResponseDto, StockStatsResponseDto, StockMovementResponseDto, StockAlertResponseDto } from './dto/product-response.dto';
+import { ProductResponseDto, ProductListResponseDto, StockStatsResponseDto, StockMovementResponseDto, StockAlertResponseDto, ProductCategoryResponseDto } from './dto/product-response.dto';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { RolePermissionGuard } from '../common/guards/role-permission.guard';
@@ -26,12 +26,86 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RequirePermission } from '../common/guards/role-permission.guard';
 import { ApiBearerAuth, ApiResponse, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import { CreateProductCategoryDto } from './dto/create-category.dto';
+import { UpdateProductCategoryDto } from './dto/update-category.dto';
+import { ListProductCategoriesDto } from './dto/list-categories.dto';
 
 @ApiTags('Stock Management')
 @Controller('stock')
 @UseGuards(JwtAccessGuard, RolesGuard)
 export class StockController {
     constructor(private stockService: StockService) { }
+
+    // ===== CATEGORIAS =====
+    @ApiOperation({ summary: 'Criar nova categoria de produto' })
+    @ApiResponse({ status: 201, description: 'Categoria criada com sucesso', type: ProductCategoryResponseDto })
+    @Post('categories')
+    @Roles(Role.ADMINISTRADOR)
+    @RequirePermission('product_categories', 'create')
+    @UseGuards(RolePermissionGuard)
+    createCategory(@Body() dto: CreateProductCategoryDto, @GetUser() user: any) {
+        return this.stockService.createCategory(dto, user.id);
+    }
+
+    @ApiOperation({ summary: 'Listar categorias de produto' })
+    @ApiResponse({ status: 200, description: 'Lista de categorias' })
+    @Get('categories')
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @RequirePermission('product_categories', 'read')
+    @UseGuards(RolePermissionGuard)
+    @ApiQuery({ name: 'name', required: false, type: String, description: 'Buscar por nome' })
+    @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filtrar por status' })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Página atual' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Itens por página' })
+    @ApiQuery({ name: 'sortBy', required: false, type: String, description: 'Campo para ordenação' })
+    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: 'Direção da ordenação' })
+    listCategories(@Query() query: ListProductCategoriesDto) {
+        return this.stockService.listCategories(query);
+    }
+
+    @ApiOperation({ summary: 'Buscar categoria por ID' })
+    @ApiResponse({ status: 200, description: 'Dados da categoria', type: ProductCategoryResponseDto })
+    @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
+    @Get('categories/:id')
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @RequirePermission('product_categories', 'read')
+    @UseGuards(RolePermissionGuard)
+    getCategory(@Param('id') id: string) {
+        return this.stockService.getCategory(id);
+    }
+
+    @ApiOperation({ summary: 'Atualizar categoria' })
+    @ApiResponse({ status: 200, description: 'Categoria atualizada com sucesso', type: ProductCategoryResponseDto })
+    @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
+    @Put('categories/:id')
+    @Roles(Role.ADMINISTRADOR)
+    @RequirePermission('product_categories', 'update')
+    @UseGuards(RolePermissionGuard)
+    updateCategory(@Param('id') id: string, @Body() dto: UpdateProductCategoryDto) {
+        return this.stockService.updateCategory(id, dto);
+    }
+
+    @ApiOperation({ summary: 'Deletar categoria' })
+    @ApiResponse({ status: 200, description: 'Categoria deletada com sucesso' })
+    @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
+    @Delete('categories/:id')
+    @Roles(Role.ADMINISTRADOR)
+    @RequirePermission('product_categories', 'delete')
+    @UseGuards(RolePermissionGuard)
+    removeCategory(@Param('id') id: string) {
+        return this.stockService.removeCategory(id);
+    }
+
+    @ApiOperation({ summary: 'Alternar status da categoria (ativa/inativa)' })
+    @ApiResponse({ status: 200, description: 'Status alterado com sucesso', type: ProductCategoryResponseDto })
+    @ApiResponse({ status: 404, description: 'Categoria não encontrada' })
+    @Patch('categories/:id/toggle-status')
+    @Roles(Role.ADMINISTRADOR)
+    @RequirePermission('product_categories', 'update')
+    @UseGuards(RolePermissionGuard)
+    toggleCategoryStatus(@Param('id') id: string) {
+        return this.stockService.toggleCategoryStatus(id);
+    }
 
     // ===== PRODUTOS =====
     @ApiOperation({ summary: 'Criar novo produto' })

@@ -25,6 +25,9 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RequirePermission } from '../common/guards/role-permission.guard';
 import { ApiBearerAuth, ApiResponse, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import { CreateServiceCategoryDto } from './dto/create-service-category.dto';
+import { UpdateServiceCategoryDto } from './dto/update-service-category.dto';
+import { ListServiceCategoriesDto } from './dto/list-service-categories.dto';
 
 @ApiTags('Services')
 @Controller('services')
@@ -52,7 +55,7 @@ export class ServicesController {
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Página atual' })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Itens por página' })
     @ApiQuery({ name: 'search', required: false, type: String, description: 'Buscar por nome ou descrição' })
-    @ApiQuery({ name: 'category', required: false, enum: ['FACIAL_TREATMENT', 'BODY_TREATMENT', 'HAIR_REMOVAL', 'SKIN_CLEANING', 'AESTHETIC_PROCEDURE', 'CONSULTATION', 'MAINTENANCE', 'OTHER'], description: 'Filtrar por categoria' })
+    @ApiQuery({ name: 'serviceCategoryId', required: false, type: String, description: 'Filtrar por categoria (ID)' })
     @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filtrar por status ativo' })
     @ApiQuery({ name: 'minPrice', required: false, type: Number, description: 'Filtrar por preço mínimo' })
     @ApiQuery({ name: 'maxPrice', required: false, type: Number, description: 'Filtrar por preço máximo' })
@@ -131,14 +134,14 @@ export class ServicesController {
         return this.services.searchByName(name);
     }
 
-    @ApiOperation({ summary: 'Buscar serviços por categoria' })
+    @ApiOperation({ summary: 'Buscar serviços por categoria (ID)' })
     @ApiResponse({ status: 200, description: 'Lista de serviços por categoria' })
-    @Get('search/category/:category')
+    @Get('search/category/:serviceCategoryId')
     @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
     @RequirePermission('services', 'read')
     @UseGuards(RolePermissionGuard)
-    searchByCategory(@Param('category') category: string) {
-        return this.services.searchByCategory(category);
+    searchByCategory(@Param('serviceCategoryId') serviceCategoryId: string) {
+        return this.services.searchByCategory(serviceCategoryId);
     }
 
     @ApiOperation({ summary: 'Buscar serviços por faixa de preço' })
@@ -162,5 +165,66 @@ export class ServicesController {
     @UseGuards(RolePermissionGuard)
     getServicesByDuration(@Param('maxDuration') maxDuration: string) {
         return this.services.getServicesByDuration(Number(maxDuration));
+    }
+
+    // ===== SERVICE CATEGORIES =====
+    @ApiOperation({ summary: 'Criar categoria de serviço' })
+    @Post('categories')
+    @Roles(Role.ADMINISTRADOR)
+    @RequirePermission('service_categories', 'create')
+    @UseGuards(RolePermissionGuard)
+    createServiceCategory(@Body() dto: CreateServiceCategoryDto, @GetUser() user: any) {
+        return this.services.createServiceCategory(dto, user.id);
+    }
+
+    @ApiOperation({ summary: 'Listar categorias de serviço' })
+    @Get('categories')
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @RequirePermission('service_categories', 'read')
+    @UseGuards(RolePermissionGuard)
+    @ApiQuery({ name: 'name', required: false, type: String })
+    @ApiQuery({ name: 'isActive', required: false, type: Boolean })
+    @ApiQuery({ name: 'page', required: false, type: Number })
+    @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'sortBy', required: false, type: String })
+    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+    listServiceCategories(@Query() query: ListServiceCategoriesDto) {
+        return this.services.listServiceCategories(query);
+    }
+
+    @ApiOperation({ summary: 'Buscar categoria de serviço por ID' })
+    @Get('categories/:id')
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @RequirePermission('service_categories', 'read')
+    @UseGuards(RolePermissionGuard)
+    getServiceCategory(@Param('id') id: string) {
+        return this.services.getServiceCategory(id);
+    }
+
+    @ApiOperation({ summary: 'Atualizar categoria de serviço' })
+    @Put('categories/:id')
+    @Roles(Role.ADMINISTRADOR)
+    @RequirePermission('service_categories', 'update')
+    @UseGuards(RolePermissionGuard)
+    updateServiceCategory(@Param('id') id: string, @Body() dto: UpdateServiceCategoryDto) {
+        return this.services.updateServiceCategory(id, dto);
+    }
+
+    @ApiOperation({ summary: 'Alternar status da categoria de serviço' })
+    @Patch('categories/:id/toggle-status')
+    @Roles(Role.ADMINISTRADOR)
+    @RequirePermission('service_categories', 'update')
+    @UseGuards(RolePermissionGuard)
+    toggleServiceCategoryStatus(@Param('id') id: string) {
+        return this.services.toggleServiceCategoryStatus(id);
+    }
+
+    @ApiOperation({ summary: 'Deletar categoria de serviço' })
+    @Delete('categories/:id')
+    @Roles(Role.ADMINISTRADOR)
+    @RequirePermission('service_categories', 'delete')
+    @UseGuards(RolePermissionGuard)
+    removeServiceCategory(@Param('id') id: string) {
+        return this.services.removeServiceCategory(id);
     }
 }

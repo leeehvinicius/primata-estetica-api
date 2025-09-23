@@ -1,6 +1,5 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber, Min, Matches } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, Min, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ServiceCategory } from '@prisma/client';
 
 export class CreateServiceDto {
     @ApiProperty({ description: 'Nome do serviço' })
@@ -12,9 +11,9 @@ export class CreateServiceDto {
     @IsString()
     description?: string;
 
-    @ApiProperty({ description: 'Categoria do serviço', enum: ServiceCategory })
-    @IsEnum(ServiceCategory)
-    category: ServiceCategory;
+    @ApiProperty({ description: 'ID da categoria do serviço' })
+    @IsString()
+    serviceCategoryId: string;
 
     @ApiProperty({ description: 'Duração em minutos' })
     @IsNumber()

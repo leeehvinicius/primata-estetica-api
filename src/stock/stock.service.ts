@@ -4,10 +4,127 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ListProductsDto } from './dto/list-products.dto';
 import { CreateStockMovementDto } from './dto/stock-movement.dto';
+import { CreateProductCategoryDto } from './dto/create-category.dto';
+import { UpdateProductCategoryDto } from './dto/update-category.dto';
+import { ListProductCategoriesDto } from './dto/list-categories.dto';
 
 @Injectable()
 export class StockService {
     constructor(private prisma: PrismaService) {}
+
+    // ===== CATEGORIAS DE PRODUTO =====
+    async createCategory(dto: CreateProductCategoryDto, userId: string) {
+        // Verificar duplicidade por nome (case-insensitive)
+        const existing = await (this.prisma as any).productCategory.findFirst({
+            where: { name: { equals: dto.name, mode: 'insensitive' } }
+        });
+        if (existing) {
+            throw new ConflictException('Já existe uma categoria com este nome');
+        }
+
+        const category = await (this.prisma as any).productCategory.create({
+            data: {
+                name: dto.name,
+                description: dto.description,
+                isActive: dto.isActive ?? true,
+                createdBy: userId,
+            }
+        });
+        return category;
+    }
+
+    async listCategories(query: ListProductCategoriesDto) {
+        const { page = 1, limit = 10, name, isActive, sortBy = 'name', sortOrder = 'asc' } = query;
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+        if (name) where.name = { contains: name, mode: 'insensitive' };
+        if (isActive !== undefined) where.isActive = isActive;
+
+        const allowedSortFields = ['name', 'createdAt', 'updatedAt', 'isActive'];
+        const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'name';
+        const orderBy: any = {}; orderBy[validSortBy] = sortOrder;
+
+        const [categories, total] = await Promise.all([
+            (this.prisma as any).productCategory.findMany({
+                where,
+                orderBy,
+                skip,
+                take: limit,
+                include: {
+                    _count: { select: { products: true } }
+                }
+            }),
+            (this.prisma as any).productCategory.count({ where })
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
+        return {
+            categories: categories.map((c: any) => ({ ...c, productCount: c._count?.products ?? 0 })),
+            total,
+            page,
+            limit,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+        };
+    }
+
+    async getCategory(id: string) {
+        const category = await (this.prisma as any).productCategory.findUnique({
+            where: { id },
+            include: { _count: { select: { products: true } } }
+        });
+        if (!category) throw new NotFoundException('Categoria não encontrada');
+        return { ...category, productCount: category._count?.products ?? 0 };
+    }
+
+    async updateCategory(id: string, dto: UpdateProductCategoryDto) {
+        const existing = await (this.prisma as any).productCategory.findUnique({ where: { id } });
+        if (!existing) throw new NotFoundException('Categoria não encontrada');
+
+        if (dto.name && dto.name.toLowerCase() !== existing.name.toLowerCase()) {
+            const nameTaken = await (this.prisma as any).productCategory.findFirst({
+                where: { name: { equals: dto.name, mode: 'insensitive' }, NOT: { id } }
+            });
+            if (nameTaken) throw new ConflictException('Já existe uma categoria com este nome');
+        }
+
+        const updated = await (this.prisma as any).productCategory.update({
+            where: { id },
+            data: {
+                name: dto.name ?? existing.name,
+                description: dto.description ?? existing.description,
+                isActive: dto.isActive ?? existing.isActive,
+            },
+            include: { _count: { select: { products: true } } }
+        });
+        return { ...updated, productCount: updated._count?.products ?? 0 };
+    }
+
+    async removeCategory(id: string) {
+        const existing = await (this.prisma as any).productCategory.findUnique({ where: { id } });
+        if (!existing) throw new NotFoundException('Categoria não encontrada');
+
+        // Verificar se há produtos vinculados
+        const count = await (this.prisma as any).product.count({ where: { categoryId: id } });
+        if (count > 0) {
+            throw new BadRequestException('Não é possível deletar categoria com produtos vinculados');
+        }
+
+        await (this.prisma as any).productCategory.delete({ where: { id } });
+        return { message: 'Categoria deletada com sucesso' };
+    }
+
+    async toggleCategoryStatus(id: string) {
+        const existing = await (this.prisma as any).productCategory.findUnique({ where: { id } });
+        if (!existing) throw new NotFoundException('Categoria não encontrada');
+        const updated = await (this.prisma as any).productCategory.update({
+            where: { id },
+            data: { isActive: !existing.isActive }
+        });
+        return updated;
+    }
 
     // ===== PRODUTOS =====
     async createProduct(dto: CreateProductDto, userId: string) {

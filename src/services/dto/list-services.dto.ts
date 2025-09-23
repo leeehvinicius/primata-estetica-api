@@ -1,6 +1,5 @@
-import { IsOptional, IsEnum, IsString, IsBoolean, IsNumber, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ServiceCategory } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 
 export class ListServicesDto {
@@ -24,10 +23,10 @@ export class ListServicesDto {
     @IsString()
     search?: string;
 
-    @ApiProperty({ description: 'Filtrar por categoria', enum: ServiceCategory, required: false })
+    @ApiProperty({ description: 'Filtrar por categoria (ID)', required: false })
     @IsOptional()
-    @IsEnum(ServiceCategory)
-    category?: ServiceCategory;
+    @IsString()
+    serviceCategoryId?: string;
 
     @ApiProperty({ description: 'Filtrar por status ativo', required: false })
     @IsOptional()

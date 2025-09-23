@@ -19,7 +19,7 @@ curl -X POST http://localhost:3000/api/services \
   -d '{
     "name": "Limpeza de Pele Profunda",
     "description": "Limpeza completa com extração de comedões",
-    "category": "SKIN_CLEANING",
+    "serviceCategoryId": "{category_id}",
     "duration": 60,
     "basePrice": 120.00,
     "currentPrice": 120.00,
@@ -42,7 +42,7 @@ curl -X POST http://localhost:3000/api/services \
   "id": "cmf1tiw75007akw4cpb8rkowm",
   "name": "Limpeza de Pele Profunda",
   "description": "Limpeza completa com extração de comedões",
-  "category": "SKIN_CLEANING",
+  "serviceCategoryId": "{category_id}",
   "duration": 60,
   "basePrice": 120.00,
   "currentPrice": 120.00,
@@ -63,7 +63,7 @@ curl -X POST http://localhost:3000/api/services \
 
 ### 2. **LISTAR SERVIÇOS**
 ```bash
-curl -X GET "http://localhost:3000/api/services?page=1&limit=10&search=limpeza&category=SKIN_CLEANING&isActive=true&minPrice=50&maxPrice=200&sortBy=name&sortOrder=asc" \
+curl -X GET "http://localhost:3000/api/services?page=1&limit=10&search=limpeza&serviceCategoryId={category_id}&isActive=true&minPrice=50&maxPrice=200&sortBy=name&sortOrder=asc" \
   -H "Authorization: Bearer {access_token}"
 ```
 
@@ -71,7 +71,7 @@ curl -X GET "http://localhost:3000/api/services?page=1&limit=10&search=limpeza&c
 - `page` (opcional): Página atual (padrão: 1)
 - `limit` (opcional): Itens por página (padrão: 10)
 - `search` (opcional): Buscar por nome ou descrição
-- `category` (opcional): Filtrar por categoria
+- `serviceCategoryId` (opcional): Filtrar por categoria (ID)
 - `isActive` (opcional): Filtrar por status ativo
 - `minPrice` (opcional): Preço mínimo
 - `maxPrice` (opcional): Preço máximo
@@ -88,7 +88,7 @@ curl -X GET "http://localhost:3000/api/services?page=1&limit=10&search=limpeza&c
       "id": "cmf1tiw75007akw4cpb8rkowm",
       "name": "Limpeza de Pele Profunda",
       "description": "Limpeza completa com extração de comedões",
-      "category": "SKIN_CLEANING",
+      "serviceCategoryId": "{category_id}",
       "duration": 60,
       "currentPrice": 120.00,
       "isActive": true
@@ -119,7 +119,7 @@ curl -X GET http://localhost:3000/api/services/cmf1tiw75007akw4cpb8rkowm \
   "id": "cmf1tiw75007akw4cpb8rkowm",
   "name": "Limpeza de Pele Profunda",
   "description": "Limpeza completa com extração de comedões",
-  "category": "SKIN_CLEANING",
+  "serviceCategoryId": "{category_id}",
   "duration": 60,
   "basePrice": 120.00,
   "currentPrice": 120.00,
@@ -259,7 +259,7 @@ curl -X GET http://localhost:3000/api/services/search/name/limpeza \
   {
     "id": "cmf1tiw75007akw4cpb8rkowm",
     "name": "Limpeza de Pele Profunda",
-    "category": "SKIN_CLEANING",
+    "serviceCategoryId": "{category_id}",
     "currentPrice": 150.00,
     "duration": 60
   }
@@ -268,9 +268,9 @@ curl -X GET http://localhost:3000/api/services/search/name/limpeza \
 
 ---
 
-### 9. **BUSCAR SERVIÇOS POR CATEGORIA**
+### 9. **BUSCAR SERVIÇOS POR CATEGORIA (ID)**
 ```bash
-curl -X GET http://localhost:3000/api/services/search/category/SKIN_CLEANING \
+curl -X GET http://localhost:3000/api/services/search/category/{category_id} \
   -H "Authorization: Bearer {access_token}"
 ```
 
@@ -310,7 +310,7 @@ curl -X GET http://localhost:3000/api/services/search/price-range/100/200 \
   {
     "id": "cmf1tiw75007akw4cpb8rkowm",
     "name": "Limpeza de Pele Profunda",
-    "category": "SKIN_CLEANING",
+    "serviceCategoryId": "{category_id}",
     "currentPrice": 150.00,
     "duration": 60
   }
@@ -333,7 +333,7 @@ curl -X GET http://localhost:3000/api/services/search/duration/60 \
   {
     "id": "cmf1tiw75007akw4cpb8rkowm",
     "name": "Limpeza de Pele Profunda",
-    "category": "SKIN_CLEANING",
+    "serviceCategoryId": "{category_id}",
     "currentPrice": 150.00,
     "duration": 60
   }
@@ -342,19 +342,52 @@ curl -X GET http://localhost:3000/api/services/search/duration/60 \
 
 ---
 
-## 🏷️ **CATEGORIAS DISPONÍVEIS**
+### 12. **CATEGORIAS DE SERVIÇO (CRUD)**
 
-```typescript
-enum ServiceCategory {
-  FACIAL_TREATMENT    // Tratamentos faciais
-  BODY_TREATMENT      // Tratamentos corporais
-  HAIR_REMOVAL        // Depilação
-  SKIN_CLEANING       // Limpeza de pele
-  AESTHETIC_PROCEDURE // Procedimentos estéticos
-  CONSULTATION        // Consultas
-  MAINTENANCE         // Manutenção
-  OTHER               // Outros
-}
+#### Criar categoria
+```bash
+curl -X POST http://localhost:3000/api/services/categories \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {access_token}" \
+  -d '{
+    "name": "Tratamentos Faciais",
+    "description": "Todos os serviços faciais"
+  }'
+```
+
+#### Listar categorias
+```bash
+curl -X GET "http://localhost:3000/api/services/categories?name=facial&isActive=true&page=1&limit=10" \
+  -H "Authorization: Bearer {access_token}"
+```
+
+#### Buscar categoria por ID
+```bash
+curl -X GET http://localhost:3000/api/services/categories/{category_id} \
+  -H "Authorization: Bearer {access_token}"
+```
+
+#### Atualizar categoria
+```bash
+curl -X PUT http://localhost:3000/api/services/categories/{category_id} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {access_token}" \
+  -d '{
+    "name": "Tratamentos Faciais Premium",
+    "isActive": true
+  }'
+```
+
+#### Alternar status
+```bash
+curl -X PATCH http://localhost:3000/api/services/categories/{category_id}/toggle-status \
+  -H "Authorization: Bearer {access_token}"
+```
+
+#### Deletar categoria
+```bash
+curl -X DELETE http://localhost:3000/api/services/categories/{category_id} \
+  -H "Authorization: Bearer {access_token}"
 ```
 
 ## 🔑 **PERMISSÕES REQUERIDAS**
@@ -401,5 +434,5 @@ enum ServiceCategory {
 - Serviços inativos não aparecem nas buscas por padrão
 - Preços são armazenados como números decimais com 2 casas
 - Duração é sempre em minutos
-- Categorias são pré-definidas e não podem ser alteradas
+- Categorias de serviço agora são dinâmicas (CRUD disponível)
 - Serviços com agendamentos ativos não podem ser deletados

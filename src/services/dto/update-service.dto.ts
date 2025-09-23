@@ -1,6 +1,5 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber, Min, Matches } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, Min, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ServiceCategory } from '@prisma/client';
 
 export class UpdateServiceDto {
     @ApiProperty({ description: 'Nome do serviço', required: false })
@@ -13,10 +12,10 @@ export class UpdateServiceDto {
     @IsString()
     description?: string;
 
-    @ApiProperty({ description: 'Categoria do serviço', enum: ServiceCategory, required: false })
+    @ApiProperty({ description: 'ID da categoria do serviço', required: false })
     @IsOptional()
-    @IsEnum(ServiceCategory)
-    category?: ServiceCategory;
+    @IsString()
+    serviceCategoryId?: string;
 
     @ApiProperty({ description: 'Duração em minutos', required: false })
     @IsOptional()
