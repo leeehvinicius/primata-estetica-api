@@ -4,6 +4,49 @@ import * as bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
+    // ===== Service Categories (defaults) =====
+    const defaultServiceCategories = [
+        { name: 'Tratamentos Faciais', description: 'Categoria para serviços faciais' },
+        { name: 'Tratamentos Corporais', description: 'Categoria para serviços corporais' },
+        { name: 'Depilação', description: 'Categoria para serviços de depilação' },
+        { name: 'Limpeza de Pele', description: 'Categoria para serviços de limpeza de pele' },
+        { name: 'Procedimentos Estéticos', description: 'Categoria para procedimentos estéticos' },
+        { name: 'Consultas', description: 'Categoria para consultas' },
+        { name: 'Manutenção', description: 'Categoria para serviços de manutenção' },
+        { name: 'Outros', description: 'Categoria genérica' },
+    ]
+
+    // Ensure an admin exists to own createdBy references
+    let admin = await prisma.user.findFirst({ where: { profile: { role: Role.ADMINISTRADOR } } })
+    if (!admin) {
+        const passwordHash = await bcrypt.hash('admin123', 12)
+        admin = await prisma.user.create({
+            data: {
+                email: 'admin@primata.com',
+                name: 'Administrador Sistema',
+                passwordHash,
+                profile: { create: { role: Role.ADMINISTRADOR, phone: '(11) 99999-9999', document: '123.456.789-00' } }
+            }
+        })
+    }
+
+    for (const c of defaultServiceCategories) {
+        await (prisma as any).serviceCategory.upsert({
+            where: { name: c.name },
+            update: {},
+            create: { name: c.name, description: c.description, createdBy: admin.id }
+        })
+    }
+
+    // Set a default category for services without one (after migration)
+    const defaultCategory = await (prisma as any).serviceCategory.findFirst({ where: { name: 'Outros' } })
+    if (defaultCategory) {
+        await (prisma as any).service.updateMany({
+            where: { OR: [{ serviceCategoryId: null }, { serviceCategoryId: '' }] },
+            data: { serviceCategoryId: defaultCategory.id }
+        })
+    }
+
     // Criar usuários de exemplo para cada role
     const users = [
         {
