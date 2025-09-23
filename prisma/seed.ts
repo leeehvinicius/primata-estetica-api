@@ -31,19 +31,20 @@ async function main() {
     }
 
     for (const c of defaultServiceCategories) {
-        await (prisma as any).serviceCategory.upsert({
-            where: { name: c.name },
-            update: {},
-            create: { name: c.name, description: c.description, createdBy: admin.id }
-        })
+        const exists = await prisma.serviceCategory.findFirst({ where: { name: { equals: c.name, mode: 'insensitive' } } })
+        if (!exists) {
+            await prisma.serviceCategory.create({
+                data: { name: c.name, description: c.description, createdBy: (admin as any).id }
+            })
+        }
     }
 
     // Set a default category for services without one (after migration)
-    const defaultCategory = await (prisma as any).serviceCategory.findFirst({ where: { name: 'Outros' } })
+    const defaultCategory = await prisma.serviceCategory.findFirst({ where: { name: { equals: 'Outros', mode: 'insensitive' } } })
     if (defaultCategory) {
-        await (prisma as any).service.updateMany({
+        await prisma.service.updateMany({
             where: { OR: [{ serviceCategoryId: null }, { serviceCategoryId: '' }] },
-            data: { serviceCategoryId: defaultCategory.id }
+            data: { serviceCategoryId: (defaultCategory as any).id }
         })
     }
 
