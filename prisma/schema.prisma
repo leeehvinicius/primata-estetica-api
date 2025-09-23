@@ -33,6 +33,7 @@ model User {
   services          Service[]
   servicePackages   ServicePackage[]
   servicePromotions ServicePromotion[]
+  serviceCategories ServiceCategory[]
 
   // Relações com agendamentos
   appointments         Appointment[]
