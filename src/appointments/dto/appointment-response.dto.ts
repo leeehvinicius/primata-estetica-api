@@ -14,6 +14,9 @@ export class AppointmentResponseDto {
     @ApiProperty()
     serviceId: string;
 
+    @ApiProperty({ required: false })
+    partnerId?: string;
+
     @ApiProperty()
     scheduledDate: Date;
 
@@ -71,8 +74,26 @@ export class AppointmentResponseDto {
     @ApiProperty({ required: false })
     service?: any;
 
-    @ApiProperty({ required: false, description: 'Parceiro que indicou (quem indicou)' })
-    partner?: any;
+    @ApiProperty({ 
+        required: false, 
+        description: 'Parceiro que indicou (quem indicou)',
+        example: {
+            id: 'string',
+            name: 'string',
+            document: 'string',
+            partnerDiscount: 10.00,
+            clientDiscount: 5.00,
+            fixedDiscount: 50.00
+        }
+    })
+    partner?: {
+        id: string;
+        name: string;
+        document: string;
+        partnerDiscount: number;
+        clientDiscount: number;
+        fixedDiscount?: number | null;
+    };
 }
 
 export class AppointmentListResponseDto {

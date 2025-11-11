@@ -247,6 +247,9 @@ export class AppointmentsService {
                             id: true,
                             name: true,
                             document: true,
+                            partnerDiscount: true,
+                            clientDiscount: true,
+                            fixedDiscount: true,
                         }
                     },
                 }
@@ -256,7 +259,8 @@ export class AppointmentsService {
 
         const enrichedAppointments = await Promise.all(appointments.map(async (appt: any) => {
             try {
-                if (appt.partner && appt.service?.currentPrice) {
+                // Garantir que os valores de desconto do partner sejam sempre retornados
+                if (appt.partner) {
                     // Fallback: se descontos não vieram no include, buscar rapidamente
                     if (
                         typeof appt.partner.partnerDiscount === 'undefined' ||
@@ -267,9 +271,19 @@ export class AppointmentsService {
                             where: { id: appt.partner.id },
                             select: { partnerDiscount: true, clientDiscount: true, fixedDiscount: true }
                         });
-                        appt.partner = { ...appt.partner, ...fullPartner };
+                        if (fullPartner) {
+                            appt.partner = { 
+                                ...appt.partner, 
+                                partnerDiscount: fullPartner.partnerDiscount,
+                                clientDiscount: fullPartner.clientDiscount,
+                                fixedDiscount: fullPartner.fixedDiscount,
+                            };
+                        }
                     }
+                }
 
+                // Calcular pricing se houver partner e service
+                if (appt.partner && appt.service?.currentPrice) {
                     const baseAmount = Number(appt.service.currentPrice);
                     const fixedDiscount = appt.partner.fixedDiscount ? Number(appt.partner.fixedDiscount) : 0;
                     const percentageDiscount = ((Number(appt.partner.partnerDiscount) + Number(appt.partner.clientDiscount)) / 100) * baseAmount;
@@ -355,7 +369,8 @@ export class AppointmentsService {
         }
 
         try {
-            if ((appointment as any).partner && (appointment as any).service?.currentPrice) {
+            // Garantir que os valores de desconto do partner sejam sempre retornados
+            if ((appointment as any).partner) {
                 if (
                     typeof (appointment as any).partner.partnerDiscount === 'undefined' ||
                     typeof (appointment as any).partner.clientDiscount === 'undefined' ||
@@ -365,9 +380,19 @@ export class AppointmentsService {
                         where: { id: (appointment as any).partner.id },
                         select: { partnerDiscount: true, clientDiscount: true, fixedDiscount: true }
                     });
-                    (appointment as any).partner = { ...(appointment as any).partner, ...fullPartner };
+                    if (fullPartner) {
+                        (appointment as any).partner = { 
+                            ...(appointment as any).partner, 
+                            partnerDiscount: fullPartner.partnerDiscount,
+                            clientDiscount: fullPartner.clientDiscount,
+                            fixedDiscount: fullPartner.fixedDiscount,
+                        };
+                    }
                 }
+            }
 
+            // Calcular pricing se houver partner e service
+            if ((appointment as any).partner && (appointment as any).service?.currentPrice) {
                 const baseAmount = Number((appointment as any).service.currentPrice);
                 const fixedDiscount = (appointment as any).partner.fixedDiscount ? Number((appointment as any).partner.fixedDiscount) : 0;
                 const percentageDiscount = ((Number((appointment as any).partner.partnerDiscount) + Number((appointment as any).partner.clientDiscount)) / 100) * baseAmount;
