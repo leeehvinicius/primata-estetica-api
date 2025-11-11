@@ -64,6 +64,33 @@ export class PaymentsController {
         return this.payments.findAll(query);
     }
 
+    @ApiOperation({ summary: 'Estatísticas dos pagamentos' })
+    @ApiResponse({ status: 200, description: 'Estatísticas dos pagamentos', type: PaymentStatsResponseDto })
+    @Get('stats/overview')
+    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+    @RequirePermission('payments', 'read')
+    @UseGuards(RolePermissionGuard)
+    getStats() {
+        return this.payments.getStats();
+    }
+
+    @ApiOperation({ summary: 'Consultar comissões dos parceiros' })
+    @ApiResponse({ status: 200, description: 'Lista de comissões dos parceiros' })
+    @Get('partner-commissions')
+    @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
+    @RequirePermission('payments', 'read')
+    @UseGuards(RolePermissionGuard)
+    @ApiQuery({ name: 'partnerId', required: false, type: String, description: 'ID do parceiro' })
+    @ApiQuery({ name: 'startDate', required: false, type: String, description: 'Data de início (YYYY-MM-DD)' })
+    @ApiQuery({ name: 'endDate', required: false, type: String, description: 'Data de fim (YYYY-MM-DD)' })
+    getPartnerCommissions(
+        @Query('partnerId') partnerId?: string,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string
+    ) {
+        return this.payments.getPartnerCommissions(partnerId, startDate, endDate);
+    }
+
     @ApiOperation({ summary: 'Buscar pagamento por ID' })
     @ApiResponse({ status: 200, description: 'Dados do pagamento', type: PaymentResponseDto })
     @ApiResponse({ status: 404, description: 'Pagamento não encontrado' })
@@ -140,30 +167,4 @@ export class PaymentsController {
         return this.payments.generateReceipt(id, user.id);
     }
 
-    @ApiOperation({ summary: 'Estatísticas dos pagamentos' })
-    @ApiResponse({ status: 200, description: 'Estatísticas dos pagamentos', type: PaymentStatsResponseDto })
-    @Get('stats/overview')
-    @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
-    @RequirePermission('payments', 'read')
-    @UseGuards(RolePermissionGuard)
-    getStats() {
-        return this.payments.getStats();
-    }
-
-    @ApiOperation({ summary: 'Consultar comissões dos parceiros' })
-    @ApiResponse({ status: 200, description: 'Lista de comissões dos parceiros' })
-    @Get('partner-commissions')
-    @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
-    @RequirePermission('payments', 'read')
-    @UseGuards(RolePermissionGuard)
-    @ApiQuery({ name: 'partnerId', required: false, type: String, description: 'ID do parceiro' })
-    @ApiQuery({ name: 'startDate', required: false, type: String, description: 'Data de início (YYYY-MM-DD)' })
-    @ApiQuery({ name: 'endDate', required: false, type: String, description: 'Data de fim (YYYY-MM-DD)' })
-    getPartnerCommissions(
-        @Query('partnerId') partnerId?: string,
-        @Query('startDate') startDate?: string,
-        @Query('endDate') endDate?: string
-    ) {
-        return this.payments.getPartnerCommissions(partnerId, startDate, endDate);
-    }
 }

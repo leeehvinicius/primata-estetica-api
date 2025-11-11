@@ -147,15 +147,28 @@ export class PaymentsService {
                 await this.calculateCommission(payment.id, appointmentData.professional.id, finalAmount, userId);
             }
 
-            // Calcular e criar comissão do parceiro se houver partnerId e desconto do parceiro
-            if (appointmentData.partnerId && partnerDiscount > 0) {
+            // Calcular e criar comissão do parceiro se houver partner e desconto do parceiro
+            const partnerId = appointmentData.partnerId || appointmentData.partner?.id;
+            
+            // Se houver partner no appointment, usar o desconto do partner se não foi fornecido no DTO
+            if (appointmentData.partner && !dto.partnerDiscount) {
+                const partnerDiscountFromPartner = Number(appointmentData.partner.partnerDiscount) || 0;
+                if (partnerDiscountFromPartner > 0) {
+                    partnerDiscount = partnerDiscountFromPartner;
+                }
+            }
+            
+            if (partnerId && partnerDiscount > 0) {
+                console.log(`Creating partner commission: partnerId=${partnerId}, amount=${Number(dto.amount)}, discount=${partnerDiscount}`);
                 await this.calculatePartnerCommission(
                     payment.id, 
-                    appointmentData.partnerId, 
+                    partnerId, 
                     Number(dto.amount), 
                     partnerDiscount, 
                     userId
                 );
+            } else {
+                console.log(`Skipping partner commission: partnerId=${partnerId}, partnerDiscount=${partnerDiscount}`);
             }
         }
 
@@ -224,6 +237,12 @@ export class PaymentsService {
                             scheduledDate: true,
                             startTime: true,
                             endTime: true,
+                            partner: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                }
+                            }
                         }
                     },
                     service: {
@@ -318,7 +337,10 @@ export class PaymentsService {
             throw new NotFoundException('Pagamento nÃ£o encontrado');
         }
 
-        return payment;
+        return {
+            ...payment,
+            partnerName: payment.appointment?.partner?.name || null,
+        };
     }
 
     async update(id: string, dto: UpdatePaymentDto) {
@@ -612,16 +634,31 @@ export class PaymentsService {
         // Exemplo: 5% de 300 = 15 reais que o parceiro deve receber
         const partnerCommissionAmount = (baseAmount * partnerDiscountPercentage) / 100;
 
-        await (this.prisma as any).partnerCommission.create({
-            data: {
-                paymentId,
-                partnerId,
-                amount: partnerCommissionAmount,
-                percentage: partnerDiscountPercentage,
-                baseAmount: baseAmount,
-                createdBy: userId,
+        try {
+            // Verificar se o modelo existe no Prisma Client
+            if (!(this.prisma as any).partnerCommission) {
+                console.warn('PartnerCommission model not found in Prisma Client. Make sure to run: npx prisma generate && npx prisma migrate dev');
+                return;
             }
-        });
+
+            await (this.prisma as any).partnerCommission.create({
+                data: {
+                    paymentId,
+                    partnerId,
+                    amount: partnerCommissionAmount,
+                    percentage: partnerDiscountPercentage,
+                    baseAmount: baseAmount,
+                    createdBy: userId,
+                }
+            });
+        } catch (error: any) {
+            // Se o modelo não existir, apenas logar o erro mas não quebrar o fluxo
+            if (error.message?.includes('partnerCommission') || error.message?.includes('PartnerCommission')) {
+                console.error('Error creating partner commission. Make sure the migration was applied:', error.message);
+            } else {
+                throw error;
+            }
+        }
     }
 
     async getPartnerCommissions(partnerId?: string, startDate?: string, endDate?: string) {
@@ -635,6 +672,19 @@ export class PaymentsService {
             where.createdAt = {};
             if (startDate) where.createdAt.gte = new Date(startDate);
             if (endDate) where.createdAt.lte = new Date(endDate);
+        }
+
+        // Verificar se o modelo existe
+        if (!(this.prisma as any).partnerCommission) {
+            return {
+                commissions: [],
+                summary: {
+                    total: 0,
+                    totalAmount: 0,
+                    pendingAmount: 0,
+                    paidAmount: 0,
+                }
+            };
         }
 
         const commissions = await (this.prisma as any).partnerCommission.findMany({
