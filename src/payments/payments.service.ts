@@ -25,19 +25,42 @@ export class PaymentsService {
             throw new NotFoundException('ServiÃ§o nÃ£o encontrado');
         }
 
-        // Verificar se o agendamento existe (se fornecido)
+        // Buscar agendamento para obter informações do parceiro e profissional (se fornecido)
+        let appointmentData: any = null;
         if (dto.appointmentId) {
-            const appointment = await this.prisma.appointment.findUnique({
-                where: { id: dto.appointmentId }
+            appointmentData = await this.prisma.appointment.findUnique({
+                where: { id: dto.appointmentId },
+                include: {
+                    partner: {
+                        select: {
+                            id: true,
+                            partnerDiscount: true,
+                            clientDiscount: true,
+                            fixedDiscount: true,
+                        }
+                    },
+                    professional: {
+                        select: {
+                            id: true,
+                        }
+                    }
+                }
             });
-            if (!appointment) {
-                throw new NotFoundException('Agendamento nÃ£o encontrado');
+            if (!appointmentData) {
+                throw new NotFoundException('Agendamento não encontrado');
             }
         }
 
         // Calcular valor final com base nos percentuais de desconto e valor adicional
-        const partnerDiscount = dto.partnerDiscount || 0;
-        const clientDiscount = dto.clientDiscount || 0;
+        // Se não vier no DTO, buscar do appointment/partner
+        let partnerDiscount = dto.partnerDiscount || 0;
+        let clientDiscount = dto.clientDiscount || 0;
+
+        // Se houver appointment com partner, usar os descontos do partner se não foram fornecidos no DTO
+        if (appointmentData?.partner && (!dto.partnerDiscount && !dto.clientDiscount)) {
+            partnerDiscount = Number(appointmentData.partner.partnerDiscount) || 0;
+            clientDiscount = Number(appointmentData.partner.clientDiscount) || 0;
+        }
         const totalDiscountPercentage = partnerDiscount + clientDiscount;
         const discountAmount = (Number(dto.amount) * totalDiscountPercentage) / 100;
         const additionalValue = dto.additionalValue || 0;
@@ -118,15 +141,21 @@ export class PaymentsService {
             await this.generateReceipt(payment.id, userId);
         }
 
-        // Calcular e criar comissÃµes se houver profissional no agendamento
-        if (dto.appointmentId) {
-            const appointment = await this.prisma.appointment.findUnique({
-                where: { id: dto.appointmentId },
-                include: { professional: true }
-            });
+        // Calcular e criar comissões se houver profissional no agendamento
+        if (dto.appointmentId && appointmentData) {
+            if (appointmentData.professional) {
+                await this.calculateCommission(payment.id, appointmentData.professional.id, finalAmount, userId);
+            }
 
-            if (appointment?.professional) {
-                await this.calculateCommission(payment.id, appointment.professional.id, finalAmount, userId);
+            // Calcular e criar comissão do parceiro se houver partnerId e desconto do parceiro
+            if (appointmentData.partnerId && partnerDiscount > 0) {
+                await this.calculatePartnerCommission(
+                    payment.id, 
+                    appointmentData.partnerId, 
+                    Number(dto.amount), 
+                    partnerDiscount, 
+                    userId
+                );
             }
         }
 
@@ -557,7 +586,7 @@ export class PaymentsService {
     }
 
     private async calculateCommission(paymentId: string, professionalId: string, amount: number, userId: string) {
-        // Percentual padrÃ£o de comissÃ£o (pode ser configurÃ¡vel)
+        // Percentual padrão de comissão (pode ser configurável)
         const commissionPercentage = 15; // 15%
         const commissionAmount = (amount * commissionPercentage) / 100;
 
@@ -570,6 +599,98 @@ export class PaymentsService {
                 createdBy: userId,
             }
         });
+    }
+
+    private async calculatePartnerCommission(
+        paymentId: string, 
+        partnerId: string, 
+        baseAmount: number, 
+        partnerDiscountPercentage: number, 
+        userId: string
+    ) {
+        // Calcular o valor devido ao parceiro baseado no percentual de desconto
+        // Exemplo: 5% de 300 = 15 reais que o parceiro deve receber
+        const partnerCommissionAmount = (baseAmount * partnerDiscountPercentage) / 100;
+
+        await (this.prisma as any).partnerCommission.create({
+            data: {
+                paymentId,
+                partnerId,
+                amount: partnerCommissionAmount,
+                percentage: partnerDiscountPercentage,
+                baseAmount: baseAmount,
+                createdBy: userId,
+            }
+        });
+    }
+
+    async getPartnerCommissions(partnerId?: string, startDate?: string, endDate?: string) {
+        const where: any = {};
+
+        if (partnerId) {
+            where.partnerId = partnerId;
+        }
+
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) where.createdAt.gte = new Date(startDate);
+            if (endDate) where.createdAt.lte = new Date(endDate);
+        }
+
+        const commissions = await (this.prisma as any).partnerCommission.findMany({
+            where,
+            include: {
+                partner: {
+                    select: {
+                        id: true,
+                        name: true,
+                        document: true,
+                    }
+                },
+                payment: {
+                    select: {
+                        id: true,
+                        amount: true,
+                        finalAmount: true,
+                        paymentDate: true,
+                        client: {
+                            select: {
+                                id: true,
+                                name: true,
+                            }
+                        },
+                        service: {
+                            select: {
+                                id: true,
+                                name: true,
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        // Calcular totais
+        const totalAmount = commissions.reduce((sum: number, comm: any) => sum + Number(comm.amount), 0);
+        const pendingAmount = commissions
+            .filter((comm: any) => comm.status === 'PENDING')
+            .reduce((sum: number, comm: any) => sum + Number(comm.amount), 0);
+        const paidAmount = commissions
+            .filter((comm: any) => comm.status === 'PAID')
+            .reduce((sum: number, comm: any) => sum + Number(comm.amount), 0);
+
+        return {
+            commissions,
+            summary: {
+                total: commissions.length,
+                totalAmount,
+                pendingAmount,
+                paidAmount,
+            }
+        };
     }
 
     private async generateReceiptNumber(): Promise<string> {

@@ -149,4 +149,21 @@ export class PaymentsController {
     getStats() {
         return this.payments.getStats();
     }
+
+    @ApiOperation({ summary: 'Consultar comissões dos parceiros' })
+    @ApiResponse({ status: 200, description: 'Lista de comissões dos parceiros' })
+    @Get('partner-commissions')
+    @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
+    @RequirePermission('payments', 'read')
+    @UseGuards(RolePermissionGuard)
+    @ApiQuery({ name: 'partnerId', required: false, type: String, description: 'ID do parceiro' })
+    @ApiQuery({ name: 'startDate', required: false, type: String, description: 'Data de início (YYYY-MM-DD)' })
+    @ApiQuery({ name: 'endDate', required: false, type: String, description: 'Data de fim (YYYY-MM-DD)' })
+    getPartnerCommissions(
+        @Query('partnerId') partnerId?: string,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string
+    ) {
+        return this.payments.getPartnerCommissions(partnerId, startDate, endDate);
+    }
 }

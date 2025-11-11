@@ -43,6 +43,7 @@ model User {
   payments        Payment[]
   paymentReceipts PaymentReceipt[]
   commissions     Commission[]
+  partnerCommissions PartnerCommission[]
 
   // Relações com estoque
   products          Product[]
@@ -448,6 +449,7 @@ model Payment {
   user              User                    @relation(fields: [createdBy], references: [id])
   receipts          PaymentReceipt[]
   commissions       Commission[]
+  partnerCommissions PartnerCommission[]
   transactionLogs   PaymentTransactionLog[]
   agreementPayments AgreementPayment[] // Pagamentos com convênios
 }
@@ -486,6 +488,26 @@ model Commission {
   payment      Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
   professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [createdBy], references: [id])
+}
+
+model PartnerCommission {
+  id             String           @id @default(cuid())
+  paymentId      String
+  partnerId      String
+  amount         Decimal          @db.Decimal(10, 2) // Valor devido ao parceiro (ex: 5% de 300 = 15)
+  percentage     Decimal          @db.Decimal(5, 2) // Percentual de desconto do parceiro aplicado
+  baseAmount     Decimal          @db.Decimal(10, 2) // Valor base sobre o qual foi calculado
+  status         CommissionStatus @default(PENDING)
+  paidAt         DateTime?
+  notes          String? // Observações da comissão
+  createdBy      String // ID do usuário que criou
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relacionamentos
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [createdBy], references: [id])
 }
 
 // Módulo de Estoque
@@ -731,6 +753,7 @@ model Partner {
 
   user User @relation(fields: [createdBy], references: [id])
   appointments Appointment[]
+  partnerCommissions PartnerCommission[]
 }
 
 enum PromotionType {
