@@ -820,7 +820,10 @@ export class AppointmentsService {
       },
     });
 
-    return conflictingAppointments.length === 0;
+    // permite até 30 agendamentos no mesmo horário
+    const MAX_APPOINTMENTS_PER_SLOT = 30;
+
+    return conflictingAppointments.length < MAX_APPOINTMENTS_PER_SLOT;
   }
 
   async getAvailableSlots(
