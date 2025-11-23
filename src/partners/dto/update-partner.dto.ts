@@ -45,5 +45,3 @@ export class UpdatePartnerDto {
   @IsOptional()
   isActive?: boolean;
 }
-
-

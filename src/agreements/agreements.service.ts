@@ -82,8 +82,16 @@ export class AgreementsService {
     return this.agreementDiscountService.findByAgreementId(agreementId);
   }
 
-  async calculateDiscount(agreementId: string, serviceId: string, amount: number) {
-    return this.agreementDiscountService.calculateDiscount(agreementId, serviceId, amount);
+  async calculateDiscount(
+    agreementId: string,
+    serviceId: string,
+    amount: number,
+  ) {
+    return this.agreementDiscountService.calculateDiscount(
+      agreementId,
+      serviceId,
+      amount,
+    );
   }
 
   // Métodos para gestão de limites de cobertura
@@ -103,7 +111,11 @@ export class AgreementsService {
     return this.coverageLimitService.findByHealthPlanId(healthPlanId);
   }
 
-  async checkCoverageLimit(agreementId: string, serviceId: string, amount: number) {
+  async checkCoverageLimit(
+    agreementId: string,
+    serviceId: string,
+    amount: number,
+  ) {
     return this.coverageLimitService.checkLimit(agreementId, serviceId, amount);
   }
 
@@ -125,7 +137,10 @@ export class AgreementsService {
   }
 
   async processPaymentWithAgreement(paymentData: any, agreementId: string) {
-    return this.agreementPaymentService.processPayment(paymentData, agreementId);
+    return this.agreementPaymentService.processPayment(
+      paymentData,
+      agreementId,
+    );
   }
 
   // Métodos para gestão de alertas
@@ -171,25 +186,44 @@ export class AgreementsService {
   }
 
   // Métodos para relatórios
-  async generateAgreementReport(healthPlanId: string, startDate: Date, endDate: Date) {
-    const agreements = await this.agreementService.findByHealthPlanId(healthPlanId);
-    const payments = await this.agreementPaymentService.findByHealthPlanId(healthPlanId, startDate, endDate);
-    
+  async generateAgreementReport(
+    healthPlanId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const agreements =
+      await this.agreementService.findByHealthPlanId(healthPlanId);
+    const payments = await this.agreementPaymentService.findByHealthPlanId(
+      healthPlanId,
+      startDate,
+      endDate,
+    );
+
     return {
       healthPlan: await this.healthPlanService.findById(healthPlanId),
       agreements: agreements.length,
       totalPayments: payments.length,
-      totalAmountCovered: payments.reduce((sum, payment) => sum + Number(payment.amountCovered), 0),
-      totalAmountClient: payments.reduce((sum, payment) => sum + Number(payment.amountClient), 0),
-      totalDiscounts: payments.reduce((sum, payment) => sum + Number(payment.discountApplied), 0),
+      totalAmountCovered: payments.reduce(
+        (sum, payment) => sum + Number(payment.amountCovered),
+        0,
+      ),
+      totalAmountClient: payments.reduce(
+        (sum, payment) => sum + Number(payment.amountClient),
+        0,
+      ),
+      totalDiscounts: payments.reduce(
+        (sum, payment) => sum + Number(payment.discountApplied),
+        0,
+      ),
       payments,
     };
   }
 
   async generateClientAgreementReport(clientId: string) {
     const agreements = await this.agreementService.findByClientId(clientId);
-    const payments = await this.agreementPaymentService.findByClientId(clientId);
-    
+    const payments =
+      await this.agreementPaymentService.findByClientId(clientId);
+
     return {
       agreements,
       total: agreements.length,
@@ -203,11 +237,20 @@ export class AgreementsService {
   }
 
   // Método para aplicar desconto automático durante agendamento
-  async applyAgreementDiscount(clientId: string, serviceId: string, originalAmount: number) {
-    const agreements = await this.agreementService.findActiveByClientId(clientId);
-    
+  async applyAgreementDiscount(
+    clientId: string,
+    serviceId: string,
+    originalAmount: number,
+  ) {
+    const agreements =
+      await this.agreementService.findActiveByClientId(clientId);
+
     if (agreements.length === 0) {
-      return { discountAmount: 0, finalAmount: originalAmount, agreementId: null };
+      return {
+        discountAmount: 0,
+        finalAmount: originalAmount,
+        agreementId: null,
+      };
     }
 
     // Usar o primeiro convênio ativo (pode ser melhorado para escolher o melhor)
@@ -215,7 +258,7 @@ export class AgreementsService {
     const discount = await this.agreementDiscountService.calculateDiscount(
       agreement.id,
       serviceId,
-      originalAmount
+      originalAmount,
     );
 
     return {
@@ -228,9 +271,17 @@ export class AgreementsService {
   }
 
   // Método para verificar limites de cobertura
-  async checkAgreementCoverage(agreementId: string, serviceId: string, amount: number) {
-    const limitCheck = await this.coverageLimitService.checkLimit(agreementId, serviceId, amount);
-    
+  async checkAgreementCoverage(
+    agreementId: string,
+    serviceId: string,
+    amount: number,
+  ) {
+    const limitCheck = await this.coverageLimitService.checkLimit(
+      agreementId,
+      serviceId,
+      amount,
+    );
+
     if (limitCheck.isExceeded) {
       await this.coverageAlertService.create({
         agreementId,

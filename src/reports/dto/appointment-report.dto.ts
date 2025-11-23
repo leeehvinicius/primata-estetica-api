@@ -7,11 +7,15 @@ export enum AppointmentReportType {
   MONTHLY = 'monthly',
   SERVICE_ANALYSIS = 'service_analysis',
   CLIENT_ANALYSIS = 'client_analysis',
-  PROFESSIONAL_ANALYSIS = 'professional_analysis'
+  PROFESSIONAL_ANALYSIS = 'professional_analysis',
 }
 
 export class AppointmentReportDto {
-  @ApiProperty({ description: 'Tipo de relatório', enum: AppointmentReportType, default: AppointmentReportType.MONTHLY })
+  @ApiProperty({
+    description: 'Tipo de relatório',
+    enum: AppointmentReportType,
+    default: AppointmentReportType.MONTHLY,
+  })
   @IsEnum(AppointmentReportType)
   reportType: AppointmentReportType = AppointmentReportType.MONTHLY;
 
@@ -40,7 +44,11 @@ export class AppointmentReportDto {
   @IsString()
   serviceId?: string;
 
-  @ApiProperty({ description: 'Incluir detalhes de agendamentos', required: false, default: false })
+  @ApiProperty({
+    description: 'Incluir detalhes de agendamentos',
+    required: false,
+    default: false,
+  })
   @IsOptional()
   includeAppointmentDetails?: boolean;
 }
@@ -118,7 +126,11 @@ export class ServiceAnalysisDto {
   @IsDateString()
   endDate?: string;
 
-  @ApiProperty({ description: 'Top N serviços mais solicitados', required: false, default: 10 })
+  @ApiProperty({
+    description: 'Top N serviços mais solicitados',
+    required: false,
+    default: 10,
+  })
   @IsOptional()
   topN?: number;
 }

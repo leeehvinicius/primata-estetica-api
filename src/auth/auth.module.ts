@@ -9,8 +9,13 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { BcryptService } from '../common/hash/bcrypt.service';
 
 @Module({
-    imports: [JwtModule.register({}), UsersModule, PrismaModule],
-    controllers: [AuthController],
-    providers: [AuthService, JwtAccessStrategy, JwtRefreshStrategy, BcryptService],
+  imports: [JwtModule.register({}), UsersModule, PrismaModule],
+  controllers: [AuthController],
+  providers: [
+    AuthService,
+    JwtAccessStrategy,
+    JwtRefreshStrategy,
+    BcryptService,
+  ],
 })
-export class AuthModule { }
+export class AuthModule {}

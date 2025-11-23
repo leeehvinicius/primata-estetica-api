@@ -2,103 +2,106 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Gender } from '@prisma/client';
 
 export class ClientResponseDto {
-    @ApiProperty()
-    id: string;
+  @ApiProperty()
+  id: string;
 
-    @ApiProperty()
-    name: string;
+  @ApiProperty()
+  name: string;
 
-    @ApiProperty({ required: false })
-    email?: string;
+  @ApiProperty({ required: false })
+  email?: string;
 
-    @ApiProperty()
-    phone: string;
+  @ApiProperty()
+  phone: string;
 
-    @ApiProperty({ required: false })
-    birthDate?: Date;
+  @ApiProperty({ required: false })
+  birthDate?: Date;
 
-    @ApiProperty({ enum: Gender, required: false })
-    gender?: Gender;
+  @ApiProperty({ enum: Gender, required: false })
+  gender?: Gender;
 
-    @ApiProperty({ required: false })
-    document?: string;
+  @ApiProperty({ required: false })
+  document?: string;
 
-    @ApiProperty({ required: false })
-    address?: string;
+  @ApiProperty({ required: false })
+  address?: string;
 
-    @ApiProperty({ required: false })
-    city?: string;
+  @ApiProperty({ required: false })
+  city?: string;
 
-    @ApiProperty({ required: false })
-    state?: string;
+  @ApiProperty({ required: false })
+  state?: string;
 
-    @ApiProperty({ required: false })
-    zipCode?: string;
+  @ApiProperty({ required: false })
+  zipCode?: string;
 
-    @ApiProperty({ required: false })
-    emergencyContact?: string;
+  @ApiProperty({ required: false })
+  emergencyContact?: string;
 
-    @ApiProperty({ required: false })
-    emergencyPhone?: string;
+  @ApiProperty({ required: false })
+  emergencyPhone?: string;
 
-    @ApiProperty({ required: false })
-    notes?: string;
+  @ApiProperty({ required: false })
+  notes?: string;
 
-    @ApiProperty({ description: 'Se o paciente aceitou os termos de uso' })
-    termsAccepted: boolean;
+  @ApiProperty({ description: 'Se o paciente aceitou os termos de uso' })
+  termsAccepted: boolean;
 
-    @ApiProperty({ description: 'Data/hora em que os termos foram aceitos', required: false })
-    termsAcceptedAt?: Date;
+  @ApiProperty({
+    description: 'Data/hora em que os termos foram aceitos',
+    required: false,
+  })
+  termsAcceptedAt?: Date;
 
-    @ApiProperty()
-    isActive: boolean;
+  @ApiProperty()
+  isActive: boolean;
 
-    @ApiProperty()
-    createdAt: Date;
+  @ApiProperty()
+  createdAt: Date;
 
-    @ApiProperty()
-    updatedAt: Date;
+  @ApiProperty()
+  updatedAt: Date;
 }
 
 export class ClientListResponseDto {
-    @ApiProperty({ type: [ClientResponseDto] })
-    clients: ClientResponseDto[];
+  @ApiProperty({ type: [ClientResponseDto] })
+  clients: ClientResponseDto[];
 
-    @ApiProperty()
-    total: number;
+  @ApiProperty()
+  total: number;
 
-    @ApiProperty()
-    page: number;
+  @ApiProperty()
+  page: number;
 
-    @ApiProperty()
-    limit: number;
+  @ApiProperty()
+  limit: number;
 
-    @ApiProperty()
-    totalPages: number;
+  @ApiProperty()
+  totalPages: number;
 
-    @ApiProperty()
-    hasNext: boolean;
+  @ApiProperty()
+  hasNext: boolean;
 
-    @ApiProperty()
-    hasPrev: boolean;
+  @ApiProperty()
+  hasPrev: boolean;
 }
 
 export class ClientStatsResponseDto {
-    @ApiProperty()
-    total: number;
+  @ApiProperty()
+  total: number;
 
-    @ApiProperty()
-    active: number;
+  @ApiProperty()
+  active: number;
 
-    @ApiProperty()
-    inactive: number;
+  @ApiProperty()
+  inactive: number;
 
-    @ApiProperty()
-    byGender: Record<Gender, number>;
+  @ApiProperty()
+  byGender: Record<Gender, number>;
 
-    @ApiProperty()
-    newThisMonth: number;
+  @ApiProperty()
+  newThisMonth: number;
 
-    @ApiProperty()
-    newThisYear: number;
+  @ApiProperty()
+  newThisYear: number;
 }

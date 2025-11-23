@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -19,7 +23,9 @@ export class AgreementService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Cliente com ID ${data.clientId} não encontrado`);
+      throw new NotFoundException(
+        `Cliente com ID ${data.clientId} não encontrado`,
+      );
     }
 
     // Verifica se o plano de saúde existe
@@ -28,7 +34,9 @@ export class AgreementService {
     });
 
     if (!healthPlan) {
-      throw new NotFoundException(`Plano de saúde com ID ${data.healthPlanId} não encontrado`);
+      throw new NotFoundException(
+        `Plano de saúde com ID ${data.healthPlanId} não encontrado`,
+      );
     }
 
     // Verifica se já existe um convênio ativo para este cliente e plano
@@ -41,7 +49,9 @@ export class AgreementService {
     });
 
     if (existingAgreement) {
-      throw new BadRequestException('Cliente já possui um convênio ativo com este plano de saúde');
+      throw new BadRequestException(
+        'Cliente já possui um convênio ativo com este plano de saúde',
+      );
     }
 
     return this.prisma.agreement.create({
@@ -135,7 +145,7 @@ export class AgreementService {
 
   async findByClientId(clientId: string) {
     return this.prisma.agreement.findMany({
-      where: { 
+      where: {
         clientId,
         isActive: true,
       },
@@ -165,7 +175,7 @@ export class AgreementService {
 
   async findActiveByClientId(clientId: string) {
     return this.prisma.agreement.findMany({
-      where: { 
+      where: {
         clientId,
         isActive: true,
         validity: {
@@ -186,7 +196,7 @@ export class AgreementService {
 
   async findByHealthPlanId(healthPlanId: string) {
     return this.prisma.agreement.findMany({
-      where: { 
+      where: {
         healthPlanId,
         isActive: true,
       },
@@ -214,12 +224,15 @@ export class AgreementService {
     });
   }
 
-  async update(id: string, data: {
-    agreementNumber?: string;
-    cardNumber?: string;
-    validity?: Date;
-    isActive?: boolean;
-  }) {
+  async update(
+    id: string,
+    data: {
+      agreementNumber?: string;
+      cardNumber?: string;
+      validity?: Date;
+      isActive?: boolean;
+    },
+  ) {
     await this.findById(id); // Verifica se existe
 
     return this.prisma.agreement.update({
@@ -251,40 +264,43 @@ export class AgreementService {
 
   async checkValidity(id: string) {
     const agreement = await this.findById(id);
-    
+
     if (!agreement.validity) {
-      return { isValid: true, message: 'Convênio sem data de validade definida' };
+      return {
+        isValid: true,
+        message: 'Convênio sem data de validade definida',
+      };
     }
 
     const now = new Date();
     const isValid = agreement.validity > now;
-    
+
     return {
       isValid,
-      message: isValid 
-        ? 'Convênio válido' 
-        : 'Convênio expirado',
+      message: isValid ? 'Convênio válido' : 'Convênio expirado',
       validityDate: agreement.validity,
     };
   }
 
   async getAgreementStatistics(id: string) {
     const agreement = await this.findById(id);
-    
+
     const totalPayments = agreement.payments.length;
     const totalAmountCovered = agreement.payments.reduce(
-      (sum, ap) => sum + Number(ap.amountCovered), 
-      0
+      (sum, ap) => sum + Number(ap.amountCovered),
+      0,
     );
     const totalAmountClient = agreement.payments.reduce(
-      (sum, ap) => sum + Number(ap.amountClient), 
-      0
+      (sum, ap) => sum + Number(ap.amountClient),
+      0,
     );
     const totalDiscounts = agreement.payments.reduce(
-      (sum, ap) => sum + Number(ap.discountApplied), 
-      0
+      (sum, ap) => sum + Number(ap.discountApplied),
+      0,
     );
-    const activeAlerts = agreement.coverageAlerts.filter(alert => !alert.isResolved).length;
+    const activeAlerts = agreement.coverageAlerts.filter(
+      (alert) => !alert.isResolved,
+    ).length;
     const totalDiscountsConfigured = agreement.discounts.length;
 
     return {

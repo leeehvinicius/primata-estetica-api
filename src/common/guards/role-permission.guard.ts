@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { hasPermission } from '../constants/permissions';
 import { Role } from '@prisma/client';
@@ -10,7 +15,11 @@ export interface RequiredPermission {
 
 export const RequirePermission = (resource: string, action: string) => {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    Reflect.defineMetadata('permission', { resource, action }, descriptor.value);
+    Reflect.defineMetadata(
+      'permission',
+      { resource, action },
+      descriptor.value,
+    );
     return descriptor;
   };
 };

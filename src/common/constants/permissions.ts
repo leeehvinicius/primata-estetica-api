@@ -9,35 +9,95 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ADMINISTRADOR: [
     { resource: 'users', actions: ['create', 'read', 'update', 'delete'] },
     { resource: 'profiles', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'appointments', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'appointments',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'patients', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'medical_records', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'medical_records',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'reports', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'system_settings', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'system_settings',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'facilities', actions: ['create', 'read', 'update', 'delete'] },
     { resource: 'clients', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'client_preferences', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'attendances', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'medical_history', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'client_preferences',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'attendances',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'medical_history',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'treatments', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'professionals', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'professional_schedules', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'professional_services', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'professionals',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'professional_schedules',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'professional_services',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'services', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'service_categories', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'service_packages', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'service_promotions', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'appointments', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'appointment_reminders', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'service_categories',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'service_packages',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'service_promotions',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'appointments',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'appointment_reminders',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'payments', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'payment_receipts', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'commissions', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'payment_receipts',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'commissions',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'products', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'product_categories', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'product_categories',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'suppliers', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'stock_movements', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'stock_alerts', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'service_products', actions: ['create', 'read', 'update', 'delete'] },
+    {
+      resource: 'stock_movements',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'stock_alerts',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'service_products',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
     { resource: 'reports', actions: ['create', 'read', 'update', 'delete'] },
     { resource: 'analytics', actions: ['create', 'read', 'update', 'delete'] },
     { resource: 'dashboard', actions: ['read'] },
@@ -100,8 +160,14 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'service_categories', actions: ['read'] },
     { resource: 'service_packages', actions: ['read'] },
     { resource: 'service_promotions', actions: ['read'] },
-    { resource: 'appointments', actions: ['create', 'read', 'update', 'delete'] },
-    { resource: 'appointment_reminders', actions: ['create', 'read', 'update'] },
+    {
+      resource: 'appointments',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
+    {
+      resource: 'appointment_reminders',
+      actions: ['create', 'read', 'update'],
+    },
     { resource: 'payments', actions: ['create', 'read', 'update'] },
     { resource: 'payment_receipts', actions: ['create', 'read', 'update'] },
     { resource: 'commissions', actions: ['read'] },
@@ -139,11 +205,15 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ],
 };
 
-export const hasPermission = (userRole: Role, resource: string, action: string): boolean => {
+export const hasPermission = (
+  userRole: Role,
+  resource: string,
+  action: string,
+): boolean => {
   const permissions = ROLE_PERMISSIONS[userRole];
   if (!permissions) return false;
 
-  const resourcePermission = permissions.find(p => p.resource === resource);
+  const resourcePermission = permissions.find((p) => p.resource === resource);
   if (!resourcePermission) return false;
 
   return resourcePermission.actions.includes(action);
@@ -151,10 +221,13 @@ export const hasPermission = (userRole: Role, resource: string, action: string):
 
 export const getRoleDescription = (role: Role): string => {
   const descriptions = {
-    ADMINISTRADOR: 'Controle total sobre o sistema, incluindo gestão de usuários e configurações',
+    ADMINISTRADOR:
+      'Controle total sobre o sistema, incluindo gestão de usuários e configurações',
     MEDICO: 'Acesso completo aos históricos de pacientes e registros médicos',
-    RECEPCIONISTA: 'Atendimento inicial aos pacientes e agendamento de consultas',
-    TÉCNICO_DE_ENFERMAGEM: 'Técnico de enfermagem - procedimentos e cuidados aos pacientes',
+    RECEPCIONISTA:
+      'Atendimento inicial aos pacientes e agendamento de consultas',
+    TÉCNICO_DE_ENFERMAGEM:
+      'Técnico de enfermagem - procedimentos e cuidados aos pacientes',
     SERVICOS_GERAIS: 'Manutenção e organização das instalações',
   };
   return descriptions[role];

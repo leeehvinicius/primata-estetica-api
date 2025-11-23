@@ -42,5 +42,3 @@ export class CreatePartnerDto {
   @IsOptional()
   isActive?: boolean;
 }
-
-

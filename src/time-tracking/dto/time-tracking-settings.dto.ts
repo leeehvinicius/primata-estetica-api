@@ -1,4 +1,10 @@
-import { IsBoolean, IsOptional, IsString, IsNumber, IsObject } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsObject,
+} from 'class-validator';
 
 export class UpdateTimeTrackingSettingsDto {
   @IsOptional()

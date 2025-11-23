@@ -41,4 +41,4 @@ import { TimeTrackingModule } from './time-tracking/time-tracking.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

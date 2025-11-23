@@ -8,11 +8,15 @@ export enum ReportPeriod {
   MONTHLY = 'monthly',
   QUARTERLY = 'quarterly',
   YEARLY = 'yearly',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 export class FinancialReportDto {
-  @ApiProperty({ description: 'Período do relatório', enum: ReportPeriod, default: ReportPeriod.MONTHLY })
+  @ApiProperty({
+    description: 'Período do relatório',
+    enum: ReportPeriod,
+    default: ReportPeriod.MONTHLY,
+  })
   @IsEnum(ReportPeriod)
   period: ReportPeriod = ReportPeriod.MONTHLY;
 
@@ -26,17 +30,29 @@ export class FinancialReportDto {
   @IsDateString()
   endDate?: string;
 
-  @ApiProperty({ description: 'Incluir detalhes por serviço', required: false, default: false })
+  @ApiProperty({
+    description: 'Incluir detalhes por serviço',
+    required: false,
+    default: false,
+  })
   @IsOptional()
   @Transform(({ value }) => value === 'true')
   includeServiceDetails?: boolean;
 
-  @ApiProperty({ description: 'Incluir detalhes por profissional', required: false, default: false })
+  @ApiProperty({
+    description: 'Incluir detalhes por profissional',
+    required: false,
+    default: false,
+  })
   @IsOptional()
   @Transform(({ value }) => value === 'true')
   includeProfessionalDetails?: boolean;
 
-  @ApiProperty({ description: 'Incluir detalhes por método de pagamento', required: false, default: false })
+  @ApiProperty({
+    description: 'Incluir detalhes por método de pagamento',
+    required: false,
+    default: false,
+  })
   @IsOptional()
   @Transform(({ value }) => value === 'true')
   includePaymentMethodDetails?: boolean;

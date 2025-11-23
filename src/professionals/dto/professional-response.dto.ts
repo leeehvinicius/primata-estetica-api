@@ -2,112 +2,112 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Gender } from '@prisma/client';
 
 export class ProfessionalResponseDto {
-    @ApiProperty()
-    id: string;
+  @ApiProperty()
+  id: string;
 
-    @ApiProperty()
-    name: string;
+  @ApiProperty()
+  name: string;
 
-    @ApiProperty({ required: false })
-    email?: string;
+  @ApiProperty({ required: false })
+  email?: string;
 
-    @ApiProperty()
-    phone: string;
+  @ApiProperty()
+  phone: string;
 
-    @ApiProperty()
-    specialty: string;
+  @ApiProperty()
+  specialty: string;
 
-    @ApiProperty({ required: false })
-    license?: string;
+  @ApiProperty({ required: false })
+  license?: string;
 
-    @ApiProperty({ required: false })
-    document?: string;
+  @ApiProperty({ required: false })
+  document?: string;
 
-    @ApiProperty({ required: false })
-    birthDate?: Date;
+  @ApiProperty({ required: false })
+  birthDate?: Date;
 
-    @ApiProperty({ enum: Gender, required: false })
-    gender?: Gender;
+  @ApiProperty({ enum: Gender, required: false })
+  gender?: Gender;
 
-    @ApiProperty({ required: false })
-    address?: string;
+  @ApiProperty({ required: false })
+  address?: string;
 
-    @ApiProperty({ required: false })
-    city?: string;
+  @ApiProperty({ required: false })
+  city?: string;
 
-    @ApiProperty({ required: false })
-    state?: string;
+  @ApiProperty({ required: false })
+  state?: string;
 
-    @ApiProperty({ required: false })
-    zipCode?: string;
+  @ApiProperty({ required: false })
+  zipCode?: string;
 
-    @ApiProperty({ required: false })
-    emergencyContact?: string;
+  @ApiProperty({ required: false })
+  emergencyContact?: string;
 
-    @ApiProperty({ required: false })
-    emergencyPhone?: string;
+  @ApiProperty({ required: false })
+  emergencyPhone?: string;
 
-    @ApiProperty()
-    hireDate: Date;
+  @ApiProperty()
+  hireDate: Date;
 
-    @ApiProperty({ required: false })
-    salary?: number;
+  @ApiProperty({ required: false })
+  salary?: number;
 
-    @ApiProperty({ required: false })
-    notes?: string;
+  @ApiProperty({ required: false })
+  notes?: string;
 
-    @ApiProperty()
-    isActive: boolean;
+  @ApiProperty()
+  isActive: boolean;
 
-    @ApiProperty()
-    createdAt: Date;
+  @ApiProperty()
+  createdAt: Date;
 
-    @ApiProperty()
-    updatedAt: Date;
+  @ApiProperty()
+  updatedAt: Date;
 }
 
 export class ProfessionalListResponseDto {
-    @ApiProperty({ type: [ProfessionalResponseDto] })
-    professionals: ProfessionalResponseDto[];
+  @ApiProperty({ type: [ProfessionalResponseDto] })
+  professionals: ProfessionalResponseDto[];
 
-    @ApiProperty()
-    total: number;
+  @ApiProperty()
+  total: number;
 
-    @ApiProperty()
-    page: number;
+  @ApiProperty()
+  page: number;
 
-    @ApiProperty()
-    limit: number;
+  @ApiProperty()
+  limit: number;
 
-    @ApiProperty()
-    totalPages: number;
+  @ApiProperty()
+  totalPages: number;
 
-    @ApiProperty()
-    hasNext: boolean;
+  @ApiProperty()
+  hasNext: boolean;
 
-    @ApiProperty()
-    hasPrev: boolean;
+  @ApiProperty()
+  hasPrev: boolean;
 }
 
 export class ProfessionalStatsResponseDto {
-    @ApiProperty()
-    total: number;
+  @ApiProperty()
+  total: number;
 
-    @ApiProperty()
-    active: number;
+  @ApiProperty()
+  active: number;
 
-    @ApiProperty()
-    inactive: number;
+  @ApiProperty()
+  inactive: number;
 
-    @ApiProperty()
-    byGender: Record<Gender, number>;
+  @ApiProperty()
+  byGender: Record<Gender, number>;
 
-    @ApiProperty()
-    bySpecialty: Record<string, number>;
+  @ApiProperty()
+  bySpecialty: Record<string, number>;
 
-    @ApiProperty()
-    newThisMonth: number;
+  @ApiProperty()
+  newThisMonth: number;
 
-    @ApiProperty()
-    newThisYear: number;
+  @ApiProperty()
+  newThisYear: number;
 }

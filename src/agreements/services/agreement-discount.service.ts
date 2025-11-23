@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -19,7 +23,9 @@ export class AgreementDiscountService {
     });
 
     if (!agreement) {
-      throw new NotFoundException(`Convênio com ID ${data.agreementId} não encontrado`);
+      throw new NotFoundException(
+        `Convênio com ID ${data.agreementId} não encontrado`,
+      );
     }
 
     // Verifica se o serviço existe (se fornecido)
@@ -29,7 +35,9 @@ export class AgreementDiscountService {
       });
 
       if (!service) {
-        throw new NotFoundException(`Serviço com ID ${data.serviceId} não encontrado`);
+        throw new NotFoundException(
+          `Serviço com ID ${data.serviceId} não encontrado`,
+        );
       }
     }
 
@@ -40,24 +48,39 @@ export class AgreementDiscountService {
       });
 
       if (!package_) {
-        throw new NotFoundException(`Pacote com ID ${data.packageId} não encontrado`);
+        throw new NotFoundException(
+          `Pacote com ID ${data.packageId} não encontrado`,
+        );
       }
     }
 
     // Regras de validação para desconto: aceitar percentual OU valor fixo
-    if ((data.discountPercentage === undefined || data.discountPercentage === null) && (data.discountValue === undefined || data.discountValue === null)) {
-      throw new BadRequestException('Informe discountPercentage (0-100) ou discountValue (> 0)');
+    if (
+      (data.discountPercentage === undefined ||
+        data.discountPercentage === null) &&
+      (data.discountValue === undefined || data.discountValue === null)
+    ) {
+      throw new BadRequestException(
+        'Informe discountPercentage (0-100) ou discountValue (> 0)',
+      );
     }
 
-    if (data.discountPercentage !== undefined && data.discountPercentage !== null) {
+    if (
+      data.discountPercentage !== undefined &&
+      data.discountPercentage !== null
+    ) {
       if (data.discountPercentage < 0 || data.discountPercentage > 100) {
-        throw new BadRequestException('Percentual de desconto deve estar entre 0 e 100');
+        throw new BadRequestException(
+          'Percentual de desconto deve estar entre 0 e 100',
+        );
       }
     }
 
     if (data.discountValue !== undefined && data.discountValue !== null) {
       if (data.discountValue < 0) {
-        throw new BadRequestException('Valor de desconto deve ser maior ou igual a 0');
+        throw new BadRequestException(
+          'Valor de desconto deve ser maior ou igual a 0',
+        );
       }
     }
 
@@ -71,7 +94,9 @@ export class AgreementDiscountService {
     });
 
     if (existingDiscount) {
-      throw new BadRequestException('Já existe um desconto configurado para este convênio, serviço e pacote');
+      throw new BadRequestException(
+        'Já existe um desconto configurado para este convênio, serviço e pacote',
+      );
     }
 
     const createData: any = {
@@ -103,7 +128,7 @@ export class AgreementDiscountService {
 
   async findByAgreementId(agreementId: string) {
     return this.prisma.agreementDiscount.findMany({
-      where: { 
+      where: {
         agreementId,
         isActive: true,
       },
@@ -136,23 +161,30 @@ export class AgreementDiscountService {
     return discount;
   }
 
-  async update(id: string, data: {
-    discountPercentage?: number;
-    discountValue?: number | null;
-    isActive?: boolean;
-  }) {
+  async update(
+    id: string,
+    data: {
+      discountPercentage?: number;
+      discountValue?: number | null;
+      isActive?: boolean;
+    },
+  ) {
     await this.findById(id); // Verifica se existe
 
     // Validações
     if (data.discountPercentage !== undefined) {
       if (data.discountPercentage < 0 || data.discountPercentage > 100) {
-        throw new BadRequestException('Percentual de desconto deve estar entre 0 e 100');
+        throw new BadRequestException(
+          'Percentual de desconto deve estar entre 0 e 100',
+        );
       }
     }
 
     if (data.discountValue !== undefined && data.discountValue !== null) {
       if (data.discountValue < 0) {
-        throw new BadRequestException('Valor de desconto deve ser maior ou igual a 0');
+        throw new BadRequestException(
+          'Valor de desconto deve ser maior ou igual a 0',
+        );
       }
     }
 
@@ -182,10 +214,14 @@ export class AgreementDiscountService {
     });
   }
 
-  async calculateDiscount(agreementId: string, serviceId: string, amount: number) {
+  async calculateDiscount(
+    agreementId: string,
+    serviceId: string,
+    amount: number,
+  ) {
     // Busca o convênio e verifica se está ativo
     const agreement = await this.prisma.agreement.findUnique({
-      where: { 
+      where: {
         id: agreementId,
         isActive: true,
       },
@@ -201,7 +237,9 @@ export class AgreementDiscountService {
     });
 
     if (!agreement) {
-      throw new NotFoundException(`Convênio ativo com ID ${agreementId} não encontrado`);
+      throw new NotFoundException(
+        `Convênio ativo com ID ${agreementId} não encontrado`,
+      );
     }
 
     // Verifica se o convênio não expirou
@@ -215,15 +253,13 @@ export class AgreementDiscountService {
     }
 
     // Busca desconto específico para o serviço
-    let discount = agreement.discounts.find(d => 
-      d.serviceId === serviceId && !d.packageId
+    let discount = agreement.discounts.find(
+      (d) => d.serviceId === serviceId && !d.packageId,
     );
 
     // Se não encontrar desconto específico para o serviço, busca desconto geral (sem serviço específico)
     if (!discount) {
-      discount = agreement.discounts.find(d => 
-        !d.serviceId && !d.packageId
-      );
+      discount = agreement.discounts.find((d) => !d.serviceId && !d.packageId);
     }
 
     if (!discount) {
@@ -236,29 +272,37 @@ export class AgreementDiscountService {
     }
 
     // Calcula por valor fixo (se existir) senão por percentual
-    const discountValue = (discount as any).discountValue !== undefined && (discount as any).discountValue !== null
-      ? Number((discount as any).discountValue)
-      : null;
+    const discountValue =
+      (discount as any).discountValue !== undefined &&
+      (discount as any).discountValue !== null
+        ? Number((discount as any).discountValue)
+        : null;
 
-    const discountAmount = discountValue !== null
-      ? Math.min(discountValue, amount)
-      : (amount * Number(discount.discountPercentage)) / 100;
+    const discountAmount =
+      discountValue !== null
+        ? Math.min(discountValue, amount)
+        : (amount * Number(discount.discountPercentage)) / 100;
 
     return {
       discountAmount,
       discountPercentage: Number(discount.discountPercentage),
-      message: discountValue !== null
-        ? `Desconto de R$ ${discountValue.toFixed(2)} aplicado`
-        : `Desconto de ${discount.discountPercentage}% aplicado`,
+      message:
+        discountValue !== null
+          ? `Desconto de R$ ${discountValue.toFixed(2)} aplicado`
+          : `Desconto de ${discount.discountPercentage}% aplicado`,
       agreement: agreement,
       discount: discount,
     };
   }
 
-  async calculatePackageDiscount(agreementId: string, packageId: string, amount: number) {
+  async calculatePackageDiscount(
+    agreementId: string,
+    packageId: string,
+    amount: number,
+  ) {
     // Busca o convênio e verifica se está ativo
     const agreement = await this.prisma.agreement.findUnique({
-      where: { 
+      where: {
         id: agreementId,
         isActive: true,
       },
@@ -274,7 +318,9 @@ export class AgreementDiscountService {
     });
 
     if (!agreement) {
-      throw new NotFoundException(`Convênio ativo com ID ${agreementId} não encontrado`);
+      throw new NotFoundException(
+        `Convênio ativo com ID ${agreementId} não encontrado`,
+      );
     }
 
     // Verifica se o convênio não expirou
@@ -288,9 +334,7 @@ export class AgreementDiscountService {
     }
 
     // Busca desconto específico para o pacote
-    const discount = agreement.discounts.find(d => 
-      d.packageId === packageId
-    );
+    const discount = agreement.discounts.find((d) => d.packageId === packageId);
 
     if (!discount) {
       return {
@@ -301,20 +345,24 @@ export class AgreementDiscountService {
       };
     }
 
-    const discountValue = (discount as any).discountValue !== undefined && (discount as any).discountValue !== null
-      ? Number((discount as any).discountValue)
-      : null;
+    const discountValue =
+      (discount as any).discountValue !== undefined &&
+      (discount as any).discountValue !== null
+        ? Number((discount as any).discountValue)
+        : null;
 
-    const discountAmount = discountValue !== null
-      ? Math.min(discountValue, amount)
-      : (amount * Number(discount.discountPercentage)) / 100;
+    const discountAmount =
+      discountValue !== null
+        ? Math.min(discountValue, amount)
+        : (amount * Number(discount.discountPercentage)) / 100;
 
     return {
       discountAmount,
       discountPercentage: Number(discount.discountPercentage),
-      message: discountValue !== null
-        ? `Desconto de R$ ${discountValue.toFixed(2)} aplicado`
-        : `Desconto de ${discount.discountPercentage}% aplicado`,
+      message:
+        discountValue !== null
+          ? `Desconto de R$ ${discountValue.toFixed(2)} aplicado`
+          : `Desconto de ${discount.discountPercentage}% aplicado`,
       agreement: agreement,
       discount: discount,
     };
@@ -322,14 +370,20 @@ export class AgreementDiscountService {
 
   async getDiscountStatistics(agreementId: string) {
     const discounts = await this.findByAgreementId(agreementId);
-    
-    const serviceDiscounts = discounts.filter(d => d.serviceId && !d.packageId);
-    const packageDiscounts = discounts.filter(d => d.packageId);
-    const generalDiscounts = discounts.filter(d => !d.serviceId && !d.packageId);
 
-    const averageDiscountPercentage = discounts.length > 0 
-      ? discounts.reduce((sum, d) => sum + Number(d.discountPercentage), 0) / discounts.length
-      : 0;
+    const serviceDiscounts = discounts.filter(
+      (d) => d.serviceId && !d.packageId,
+    );
+    const packageDiscounts = discounts.filter((d) => d.packageId);
+    const generalDiscounts = discounts.filter(
+      (d) => !d.serviceId && !d.packageId,
+    );
+
+    const averageDiscountPercentage =
+      discounts.length > 0
+        ? discounts.reduce((sum, d) => sum + Number(d.discountPercentage), 0) /
+          discounts.length
+        : 0;
 
     return {
       totalDiscounts: discounts.length,
@@ -343,7 +397,7 @@ export class AgreementDiscountService {
 
   async findDiscountsByService(serviceId: string) {
     return this.prisma.agreementDiscount.findMany({
-      where: { 
+      where: {
         serviceId,
         isActive: true,
       },
@@ -361,7 +415,7 @@ export class AgreementDiscountService {
 
   async findDiscountsByPackage(packageId: string) {
     return this.prisma.agreementDiscount.findMany({
-      where: { 
+      where: {
         packageId,
         isActive: true,
       },

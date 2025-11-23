@@ -1,11 +1,31 @@
-import { Body, Controller, Get, Post, Put, Delete, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { PartnersService } from './partners.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { RolePermissionGuard, RequirePermission } from '../common/guards/role-permission.guard';
+import {
+  RolePermissionGuard,
+  RequirePermission,
+} from '../common/guards/role-permission.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { Role } from '@prisma/client';
@@ -68,5 +88,3 @@ export class PartnersController {
     return this.partners.remove(id);
   }
 }
-
-

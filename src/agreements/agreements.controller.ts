@@ -36,7 +36,10 @@ export class AgreementsController {
   @Post('health-plans')
   @Roles(Role.ADMINISTRADOR)
   @ApiOperation({ summary: 'Criar novo plano de saúde' })
-  @ApiResponse({ status: 201, description: 'Plano de saúde criado com sucesso' })
+  @ApiResponse({
+    status: 201,
+    description: 'Plano de saúde criado com sucesso',
+  })
   async createHealthPlan(@Body() data: any) {
     return this.agreementsService.createHealthPlan(data);
   }
@@ -178,7 +181,9 @@ export class AgreementsController {
   @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
   @ApiOperation({ summary: 'Calcular desconto para serviço' })
   @ApiResponse({ status: 200, description: 'Desconto calculado' })
-  async calculateDiscount(@Body() data: { agreementId: string; serviceId: string; amount: number }) {
+  async calculateDiscount(
+    @Body() data: { agreementId: string; serviceId: string; amount: number },
+  ) {
     return this.agreementsService.calculateDiscount(
       data.agreementId,
       data.serviceId,
@@ -234,7 +239,9 @@ export class AgreementsController {
   @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
   @ApiOperation({ summary: 'Verificar limite de cobertura' })
   @ApiResponse({ status: 200, description: 'Verificação de limite' })
-  async checkCoverageLimit(@Body() data: { agreementId: string; serviceId: string; amount: number }) {
+  async checkCoverageLimit(
+    @Body() data: { agreementId: string; serviceId: string; amount: number },
+  ) {
     return this.agreementsService.checkCoverageLimit(
       data.agreementId,
       data.serviceId,
@@ -253,7 +260,10 @@ export class AgreementsController {
     @Param('agreementId') agreementId: string,
     @Body() paymentData: any,
   ) {
-    return this.agreementsService.processPaymentWithAgreement(paymentData, agreementId);
+    return this.agreementsService.processPaymentWithAgreement(
+      paymentData,
+      agreementId,
+    );
   }
 
   @Get('agreements/:agreementId/payments')
@@ -400,7 +410,9 @@ export class AgreementsController {
   @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
   @ApiOperation({ summary: 'Aplicar desconto automático durante agendamento' })
   @ApiResponse({ status: 200, description: 'Desconto aplicado' })
-  async applyAgreementDiscount(@Body() data: { clientId: string; serviceId: string; amount: number }) {
+  async applyAgreementDiscount(
+    @Body() data: { clientId: string; serviceId: string; amount: number },
+  ) {
     return this.agreementsService.applyAgreementDiscount(
       data.clientId,
       data.serviceId,
@@ -412,7 +424,9 @@ export class AgreementsController {
   @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
   @ApiOperation({ summary: 'Verificar cobertura de convênio' })
   @ApiResponse({ status: 200, description: 'Verificação de cobertura' })
-  async checkAgreementCoverage(@Body() data: { agreementId: string; serviceId: string; amount: number }) {
+  async checkAgreementCoverage(
+    @Body() data: { agreementId: string; serviceId: string; amount: number },
+  ) {
     return this.agreementsService.checkAgreementCoverage(
       data.agreementId,
       data.serviceId,

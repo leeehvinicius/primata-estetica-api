@@ -27,7 +27,7 @@ export class PhotoCaptureService {
 
       // Extrair metadados da foto
       const { mimeType, data } = this.extractBase64Data(photoData);
-      
+
       // Validar tipo de arquivo
       if (!this.isAllowedImageType(mimeType)) {
         throw new BadRequestException('Tipo de arquivo não permitido');
@@ -124,7 +124,7 @@ export class PhotoCaptureService {
     try {
       const fileName = path.basename(photoUrl);
       const filePath = path.join(this.uploadPath, fileName);
-      
+
       if (fs.existsSync(filePath)) {
         await fs.promises.unlink(filePath);
       }
@@ -155,7 +155,7 @@ export class PhotoCaptureService {
   async resizePhoto(
     photoData: string,
     maxWidth: number = 800,
-    maxHeight: number = 600
+    maxHeight: number = 600,
   ): Promise<string> {
     // Implementação básica - em produção, usar uma biblioteca como sharp
     // Por enquanto, retorna a foto original

@@ -8,11 +8,7 @@ import { LocationService } from './services/location.service';
 @Module({
   imports: [PrismaModule],
   controllers: [TimeTrackingController],
-  providers: [
-    TimeTrackingService,
-    PhotoCaptureService,
-    LocationService,
-  ],
+  providers: [TimeTrackingService, PhotoCaptureService, LocationService],
   exports: [TimeTrackingService],
 })
 export class TimeTrackingModule {}

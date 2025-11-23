@@ -10,5 +10,3 @@ import { PartnersController } from './partners.controller';
   exports: [PartnersService],
 })
 export class PartnersModule {}
-
-

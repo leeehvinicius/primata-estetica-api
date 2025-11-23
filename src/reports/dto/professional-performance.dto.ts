@@ -2,7 +2,10 @@ import { IsOptional, IsDateString, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ProfessionalPerformanceDto {
-  @ApiProperty({ description: 'ID do profissional (opcional)', required: false })
+  @ApiProperty({
+    description: 'ID do profissional (opcional)',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   professionalId?: string;
@@ -17,11 +20,19 @@ export class ProfessionalPerformanceDto {
   @IsDateString()
   endDate?: string;
 
-  @ApiProperty({ description: 'Incluir detalhes de atendimentos', required: false, default: false })
+  @ApiProperty({
+    description: 'Incluir detalhes de atendimentos',
+    required: false,
+    default: false,
+  })
   @IsOptional()
   includeAppointmentDetails?: boolean;
 
-  @ApiProperty({ description: 'Incluir detalhes de comissões', required: false, default: false })
+  @ApiProperty({
+    description: 'Incluir detalhes de comissões',
+    required: false,
+    default: false,
+  })
   @IsOptional()
   includeCommissionDetails?: boolean;
 }

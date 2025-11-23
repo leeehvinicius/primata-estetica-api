@@ -28,7 +28,10 @@ export class LocationService {
    * @param allowedLocations Lista de locais permitidos
    * @returns true se a localização for válida
    */
-  validateLocation(location: LocationData, allowedLocations: AllowedLocation[]): boolean {
+  validateLocation(
+    location: LocationData,
+    allowedLocations: AllowedLocation[],
+  ): boolean {
     if (!allowedLocations || allowedLocations.length === 0) {
       return true; // Se não há restrições, permite qualquer localização
     }
@@ -38,7 +41,7 @@ export class LocationService {
         location.latitude,
         location.longitude,
         allowedLocation.latitude,
-        allowedLocation.longitude
+        allowedLocation.longitude,
       );
 
       if (distance <= allowedLocation.radius) {
@@ -57,19 +60,26 @@ export class LocationService {
    * @param lon2 Longitude do segundo ponto
    * @returns Distância em metros
    */
-  calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const R = 6371000; // Raio da Terra em metros
     const dLat = this.toRadians(lat2 - lat1);
     const dLon = this.toRadians(lon2 - lon1);
-    
-    const a = 
+
+    const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    
+      Math.cos(this.toRadians(lat1)) *
+        Math.cos(this.toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-    
+
     return distance;
   }
 
@@ -90,8 +100,7 @@ export class LocationService {
    */
   validateCoordinates(latitude: number, longitude: number): boolean {
     return (
-      latitude >= -90 && latitude <= 90 &&
-      longitude >= -180 && longitude <= 180
+      latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
     );
   }
 
@@ -101,7 +110,10 @@ export class LocationService {
    * @param longitude Longitude
    * @returns Informações do endereço
    */
-  async getAddressFromCoordinates(latitude: number, longitude: number): Promise<{
+  async getAddressFromCoordinates(
+    latitude: number,
+    longitude: number,
+  ): Promise<{
     address: string;
     city: string;
     state: string;
@@ -113,7 +125,7 @@ export class LocationService {
       address: `Rua das Flores, 123 - Centro`,
       city: 'São Paulo',
       state: 'SP',
-      country: 'Brasil'
+      country: 'Brasil',
     };
   }
 
@@ -137,8 +149,8 @@ export class LocationService {
         name: 'Escritório Principal',
         latitude: -23.5505, // São Paulo
         longitude: -46.6333,
-        radius: 100 // 100 metros
-      }
+        radius: 100, // 100 metros
+      },
     ];
   }
 
@@ -152,7 +164,7 @@ export class LocationService {
   validateWorkingHours(
     timestamp: Date,
     workingHours: any,
-    timezone: string = 'America/Sao_Paulo'
+    timezone: string = 'America/Sao_Paulo',
   ): boolean {
     if (!workingHours) {
       return true; // Se não há restrições de horário
@@ -160,7 +172,7 @@ export class LocationService {
 
     const date = new Date(timestamp);
     const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Segunda, etc.
-    
+
     // Verificar se é dia útil
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       return workingHours.allowWeekends || false;
@@ -194,7 +206,7 @@ export class LocationService {
    */
   detectSuspiciousLocation(location: LocationData): boolean {
     // Verificações básicas para detectar localizações suspeitas
-    
+
     // 1. Verificar se a precisão é muito baixa
     if (location.accuracy && location.accuracy > 1000) {
       return true;
@@ -203,7 +215,7 @@ export class LocationService {
     // 2. Verificar se as coordenadas são muito redondas (possivelmente falsas)
     const latDecimal = location.latitude % 1;
     const lonDecimal = location.longitude % 1;
-    
+
     if (Math.abs(latDecimal) < 0.001 || Math.abs(lonDecimal) < 0.001) {
       return true;
     }
@@ -212,7 +224,7 @@ export class LocationService {
     const suspiciousLocations = [
       { lat: 0, lon: 0 }, // Centro do mundo
       { lat: 37.7749, lon: -122.4194 }, // São Francisco (comum em mocks)
-      { lat: 40.7128, lon: -74.0060 }, // Nova York (comum em mocks)
+      { lat: 40.7128, lon: -74.006 }, // Nova York (comum em mocks)
     ];
 
     for (const suspicious of suspiciousLocations) {
@@ -220,10 +232,11 @@ export class LocationService {
         location.latitude,
         location.longitude,
         suspicious.lat,
-        suspicious.lon
+        suspicious.lon,
       );
-      
-      if (distance < 100) { // Menos de 100 metros
+
+      if (distance < 100) {
+        // Menos de 100 metros
         return true;
       }
     }

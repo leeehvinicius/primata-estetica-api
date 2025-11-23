@@ -72,10 +72,18 @@ export class GeneralReportDto {
   @ApiProperty({ description: 'Data de fim (YYYY-MM-DD)', required: false })
   endDate?: string;
 
-  @ApiProperty({ description: 'Incluir gráficos', required: false, default: true })
+  @ApiProperty({
+    description: 'Incluir gráficos',
+    required: false,
+    default: true,
+  })
   includeCharts?: boolean;
 
-  @ApiProperty({ description: 'Incluir tabelas detalhadas', required: false, default: false })
+  @ApiProperty({
+    description: 'Incluir tabelas detalhadas',
+    required: false,
+    default: false,
+  })
   includeDetailedTables?: boolean;
 }
 

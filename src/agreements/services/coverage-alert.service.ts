@@ -20,7 +20,9 @@ export class CoverageAlertService {
     });
 
     if (!agreement) {
-      throw new NotFoundException(`Convênio com ID ${data.agreementId} não encontrado`);
+      throw new NotFoundException(
+        `Convênio com ID ${data.agreementId} não encontrado`,
+      );
     }
 
     // Verifica se o serviço existe (se fornecido)
@@ -30,7 +32,9 @@ export class CoverageAlertService {
       });
 
       if (!service) {
-        throw new NotFoundException(`Serviço com ID ${data.serviceId} não encontrado`);
+        throw new NotFoundException(
+          `Serviço com ID ${data.serviceId} não encontrado`,
+        );
       }
     }
 
@@ -41,7 +45,9 @@ export class CoverageAlertService {
       });
 
       if (!package_) {
-        throw new NotFoundException(`Pacote com ID ${data.packageId} não encontrado`);
+        throw new NotFoundException(
+          `Pacote com ID ${data.packageId} não encontrado`,
+        );
       }
     }
 
@@ -142,7 +148,7 @@ export class CoverageAlertService {
 
   async findByAlertType(alertType: AlertType) {
     return this.prisma.coverageAlert.findMany({
-      where: { 
+      where: {
         alertType,
         isResolved: false,
       },
@@ -162,14 +168,17 @@ export class CoverageAlertService {
     });
   }
 
-  async update(id: string, data: {
-    message?: string;
-    isResolved?: boolean;
-  }) {
+  async update(
+    id: string,
+    data: {
+      message?: string;
+      isResolved?: boolean;
+    },
+  ) {
     await this.findById(id); // Verifica se existe
 
     const updateData: any = { ...data };
-    
+
     // Se está marcando como resolvido, adiciona a data de resolução
     if (data.isResolved === true) {
       updateData.resolvedAt = new Date();
@@ -192,7 +201,7 @@ export class CoverageAlertService {
   }
 
   async resolve(id: string) {
-    return this.update(id, { 
+    return this.update(id, {
       isResolved: true,
     });
   }
@@ -218,8 +227,8 @@ export class CoverageAlertService {
     });
 
     const totalAlerts = allAlerts.length;
-    const activeAlerts = allAlerts.filter(alert => !alert.isResolved).length;
-    const resolvedAlerts = allAlerts.filter(alert => alert.isResolved).length;
+    const activeAlerts = allAlerts.filter((alert) => !alert.isResolved).length;
+    const resolvedAlerts = allAlerts.filter((alert) => alert.isResolved).length;
 
     // Agrupa por tipo de alerta
     const alertTypeCounts = allAlerts.reduce((acc, alert) => {
@@ -245,14 +254,20 @@ export class CoverageAlertService {
       totalAlerts,
       activeAlerts,
       resolvedAlerts,
-      resolutionRate: totalAlerts > 0 ? (resolvedAlerts / totalAlerts) * 100 : 0,
+      resolutionRate:
+        totalAlerts > 0 ? (resolvedAlerts / totalAlerts) * 100 : 0,
       alertTypeCounts,
       healthPlanCounts,
       clientCounts,
     };
   }
 
-  async createLimitExceededAlert(agreementId: string, serviceId: string, limitAmount: number, usedAmount: number) {
+  async createLimitExceededAlert(
+    agreementId: string,
+    serviceId: string,
+    limitAmount: number,
+    usedAmount: number,
+  ) {
     return this.create({
       agreementId,
       serviceId,
@@ -277,7 +292,11 @@ export class CoverageAlertService {
     });
   }
 
-  async createCoverageDeniedAlert(agreementId: string, serviceId: string, reason: string) {
+  async createCoverageDeniedAlert(
+    agreementId: string,
+    serviceId: string,
+    reason: string,
+  ) {
     return this.create({
       agreementId,
       serviceId,
@@ -325,7 +344,7 @@ export class CoverageAlertService {
       if (agreement.coverageAlerts.length === 0) {
         const alert = await this.createExpiringSoonAlert(
           agreement.id,
-          agreement.validity!
+          agreement.validity!,
         );
         alertsCreated.push(alert);
       }
@@ -365,7 +384,7 @@ export class CoverageAlertService {
       if (agreement.coverageAlerts.length === 0) {
         const alert = await this.createInvalidAgreementAlert(
           agreement.id,
-          'Convênio expirado'
+          'Convênio expirado',
         );
         alertsCreated.push(alert);
       }

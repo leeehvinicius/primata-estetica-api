@@ -2,193 +2,196 @@ import { ApiProperty } from '@nestjs/swagger';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
 
 export class PaymentResponseDto {
-    @ApiProperty()
-    id: string;
+  @ApiProperty()
+  id: string;
 
-    @ApiProperty()
-    clientId: string;
+  @ApiProperty()
+  clientId: string;
 
-    @ApiProperty({ required: false })
-    appointmentId?: string;
+  @ApiProperty({ required: false })
+  appointmentId?: string;
 
-    @ApiProperty()
-    serviceId: string;
+  @ApiProperty()
+  serviceId: string;
 
-    @ApiProperty()
-    amount: number;
+  @ApiProperty()
+  amount: number;
 
-    @ApiProperty()
-    partnerDiscount: number;
+  @ApiProperty()
+  partnerDiscount: number;
 
-    @ApiProperty()
-    clientDiscount: number;
+  @ApiProperty()
+  clientDiscount: number;
 
-    @ApiProperty()
-    finalAmount: number;
+  @ApiProperty()
+  finalAmount: number;
 
-    @ApiProperty({ enum: PaymentMethod })
-    paymentMethod: PaymentMethod;
+  @ApiProperty({ enum: PaymentMethod })
+  paymentMethod: PaymentMethod;
 
-    @ApiProperty({ enum: PaymentStatus })
-    paymentStatus: PaymentStatus;
+  @ApiProperty({ enum: PaymentStatus })
+  paymentStatus: PaymentStatus;
 
-    @ApiProperty()
-    paymentDate: Date;
+  @ApiProperty()
+  paymentDate: Date;
 
-    @ApiProperty({ required: false })
-    dueDate?: Date;
+  @ApiProperty({ required: false })
+  dueDate?: Date;
 
-    @ApiProperty({ required: false })
-    notes?: string;
+  @ApiProperty({ required: false })
+  notes?: string;
 
-    @ApiProperty({ required: false })
-    transactionId?: string;
+  @ApiProperty({ required: false })
+  transactionId?: string;
 
-    @ApiProperty({ required: false })
-    receiptNumber?: string;
+  @ApiProperty({ required: false })
+  receiptNumber?: string;
 
-    @ApiProperty()
-    createdAt: Date;
+  @ApiProperty()
+  createdAt: Date;
 
-    @ApiProperty()
-    updatedAt: Date;
+  @ApiProperty()
+  updatedAt: Date;
 
-    // Relacionamentos
-    @ApiProperty({ required: false })
-    client?: any;
+  // Relacionamentos
+  @ApiProperty({ required: false })
+  client?: any;
 
-    @ApiProperty({ required: false })
-    appointment?: any;
+  @ApiProperty({ required: false })
+  appointment?: any;
 
-    @ApiProperty({ required: false })
-    service?: any;
+  @ApiProperty({ required: false })
+  service?: any;
 
-    @ApiProperty({ required: false, description: 'Nome do parceiro associado ao agendamento (se houver)' })
-    partnerName?: string;
+  @ApiProperty({
+    required: false,
+    description: 'Nome do parceiro associado ao agendamento (se houver)',
+  })
+  partnerName?: string;
 }
 
 export class PaymentListResponseDto {
-    @ApiProperty({ type: [PaymentResponseDto] })
-    payments: PaymentResponseDto[];
+  @ApiProperty({ type: [PaymentResponseDto] })
+  payments: PaymentResponseDto[];
 
-    @ApiProperty()
-    total: number;
+  @ApiProperty()
+  total: number;
 
-    @ApiProperty()
-    page: number;
+  @ApiProperty()
+  page: number;
 
-    @ApiProperty()
-    limit: number;
+  @ApiProperty()
+  limit: number;
 
-    @ApiProperty()
-    totalPages: number;
+  @ApiProperty()
+  totalPages: number;
 
-    @ApiProperty()
-    hasNext: boolean;
+  @ApiProperty()
+  hasNext: boolean;
 
-    @ApiProperty()
-    hasPrev: boolean;
+  @ApiProperty()
+  hasPrev: boolean;
 }
 
 export class PaymentStatsResponseDto {
-    @ApiProperty()
-    total: number;
+  @ApiProperty()
+  total: number;
 
-    @ApiProperty()
-    totalAmount: number;
+  @ApiProperty()
+  totalAmount: number;
 
-    @ApiProperty()
-    totalPaid: number;
+  @ApiProperty()
+  totalPaid: number;
 
-    @ApiProperty()
-    totalPending: number;
+  @ApiProperty()
+  totalPending: number;
 
-    @ApiProperty()
-    totalOverdue: number;
+  @ApiProperty()
+  totalOverdue: number;
 
-    @ApiProperty()
-    totalRefunded: number;
+  @ApiProperty()
+  totalRefunded: number;
 
-    @ApiProperty()
-    byMethod: Record<PaymentMethod, number>;
+  @ApiProperty()
+  byMethod: Record<PaymentMethod, number>;
 
-    @ApiProperty()
-    byStatus: Record<PaymentStatus, number>;
+  @ApiProperty()
+  byStatus: Record<PaymentStatus, number>;
 
-    @ApiProperty()
-    today: number;
+  @ApiProperty()
+  today: number;
 
-    @ApiProperty()
-    thisWeek: number;
+  @ApiProperty()
+  thisWeek: number;
 
-    @ApiProperty()
-    thisMonth: number;
+  @ApiProperty()
+  thisMonth: number;
 
-    @ApiProperty()
-    averageAmount: number;
+  @ApiProperty()
+  averageAmount: number;
 }
 
 export class ReceiptResponseDto {
-    @ApiProperty()
-    id: string;
+  @ApiProperty()
+  id: string;
 
-    @ApiProperty()
-    paymentId: string;
+  @ApiProperty()
+  paymentId: string;
 
-    @ApiProperty()
-    receiptNumber: string;
+  @ApiProperty()
+  receiptNumber: string;
 
-    @ApiProperty()
-    receiptType: string;
+  @ApiProperty()
+  receiptType: string;
 
-    @ApiProperty()
-    amount: number;
+  @ApiProperty()
+  amount: number;
 
-    @ApiProperty()
-    issuedAt: Date;
+  @ApiProperty()
+  issuedAt: Date;
 
-    @ApiProperty({ required: false })
-    notes?: string;
+  @ApiProperty({ required: false })
+  notes?: string;
 
-    @ApiProperty()
-    createdAt: Date;
+  @ApiProperty()
+  createdAt: Date;
 
-    @ApiProperty()
-    updatedAt: Date;
+  @ApiProperty()
+  updatedAt: Date;
 }
 
 export class CommissionResponseDto {
-    @ApiProperty()
-    id: string;
+  @ApiProperty()
+  id: string;
 
-    @ApiProperty()
-    paymentId: string;
+  @ApiProperty()
+  paymentId: string;
 
-    @ApiProperty()
-    professionalId: string;
+  @ApiProperty()
+  professionalId: string;
 
-    @ApiProperty()
-    amount: number;
+  @ApiProperty()
+  amount: number;
 
-    @ApiProperty()
-    percentage: number;
+  @ApiProperty()
+  percentage: number;
 
-    @ApiProperty()
-    status: string;
+  @ApiProperty()
+  status: string;
 
-    @ApiProperty({ required: false })
-    paidAt?: Date;
+  @ApiProperty({ required: false })
+  paidAt?: Date;
 
-    @ApiProperty({ required: false })
-    notes?: string;
+  @ApiProperty({ required: false })
+  notes?: string;
 
-    @ApiProperty()
-    createdAt: Date;
+  @ApiProperty()
+  createdAt: Date;
 
-    @ApiProperty()
-    updatedAt: Date;
+  @ApiProperty()
+  updatedAt: Date;
 
-    // Relacionamentos
-    @ApiProperty({ required: false })
-    professional?: any;
+  // Relacionamentos
+  @ApiProperty({ required: false })
+  professional?: any;
 }

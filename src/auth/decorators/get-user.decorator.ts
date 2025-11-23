@@ -14,7 +14,7 @@ export const GetUser = createParamDecorator(
       id: user.sub,
       email: user.email,
       profile: user.profile,
-      ...user
+      ...user,
     };
 
     return data ? mappedUser?.[data] : mappedUser;

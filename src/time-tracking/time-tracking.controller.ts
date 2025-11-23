@@ -12,13 +12,21 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { TimeTrackingService } from './time-tracking.service';
 import { RegisterTimeTrackingDto } from './dto/register-time-tracking.dto';
 import { ValidateTimeTrackingDto } from './dto/validate-time-tracking.dto';
 import { TimeTrackingQueryDto } from './dto/time-tracking-query.dto';
 import { UpdateTimeTrackingSettingsDto } from './dto/time-tracking-settings.dto';
-import { GenerateTimeTrackingReportDto, TimeTrackingReportQueryDto } from './dto/time-tracking-report.dto';
+import {
+  GenerateTimeTrackingReportDto,
+  TimeTrackingReportQueryDto,
+} from './dto/time-tracking-report.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { PhotoCaptureService } from './services/photo-capture.service';
@@ -44,7 +52,11 @@ export class TimeTrackingController {
     @GetUser('id') userId: string,
     @Request() request: any,
   ) {
-    return this.timeTrackingService.registerTimeTracking(registerDto, userId, request);
+    return this.timeTrackingService.registerTimeTracking(
+      registerDto,
+      userId,
+      request,
+    );
   }
 
   @Get()
@@ -78,7 +90,10 @@ export class TimeTrackingController {
     @Body() validateDto: ValidateTimeTrackingDto,
     @GetUser('id') validatorId: string,
   ) {
-    return this.timeTrackingService.validateTimeTracking(validateDto, validatorId);
+    return this.timeTrackingService.validateTimeTracking(
+      validateDto,
+      validatorId,
+    );
   }
 
   @Get('settings/my')
@@ -90,12 +105,18 @@ export class TimeTrackingController {
 
   @Put('settings/my')
   @ApiOperation({ summary: 'Atualizar configurações de ponto do usuário' })
-  @ApiResponse({ status: 200, description: 'Configurações atualizadas com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Configurações atualizadas com sucesso',
+  })
   async updateMyTimeTrackingSettings(
     @Body() settingsDto: UpdateTimeTrackingSettingsDto,
     @GetUser('id') userId: string,
   ) {
-    return this.timeTrackingService.updateTimeTrackingSettings(userId, settingsDto);
+    return this.timeTrackingService.updateTimeTrackingSettings(
+      userId,
+      settingsDto,
+    );
   }
 
   @Post('reports/generate')
@@ -107,7 +128,10 @@ export class TimeTrackingController {
     @Body() reportDto: GenerateTimeTrackingReportDto,
     @GetUser('id') generatorId: string,
   ) {
-    return this.timeTrackingService.generateTimeTrackingReport(reportDto, generatorId);
+    return this.timeTrackingService.generateTimeTrackingReport(
+      reportDto,
+      generatorId,
+    );
   }
 
   @Get('reports')
@@ -149,10 +173,14 @@ export class TimeTrackingController {
   @Post('capture-location')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Capturar localização atual do usuário' })
-  @ApiResponse({ status: 200, description: 'Localização capturada com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Localização capturada com sucesso',
+  })
   @ApiResponse({ status: 400, description: 'Erro ao capturar localização' })
   async captureLocation(
-    @Body() locationData: { latitude: number; longitude: number; accuracy?: number },
+    @Body()
+    locationData: { latitude: number; longitude: number; accuracy?: number },
     @GetUser('id') userId: string,
   ) {
     // Validar coordenadas
@@ -169,7 +197,7 @@ export class TimeTrackingController {
         accuracy: locationData.accuracy,
         timestamp: new Date().toISOString(),
       },
-      message: 'Localização capturada com sucesso'
+      message: 'Localização capturada com sucesso',
     };
   }
 
@@ -189,13 +217,13 @@ export class TimeTrackingController {
     // Processar e salvar a foto
     const photoUrl = await this.photoCaptureService.processPhoto(
       photoData.photoData,
-      userId
+      userId,
     );
 
     return {
       success: true,
       photoUrl,
-      message: 'Foto capturada com sucesso'
+      message: 'Foto capturada com sucesso',
     };
   }
 }

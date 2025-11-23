@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
@@ -8,7 +12,9 @@ export class PartnersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreatePartnerDto, userId: string) {
-    const exists = await this.prisma.partner.findUnique({ where: { document: dto.document } });
+    const exists = await this.prisma.partner.findUnique({
+      where: { document: dto.document },
+    });
     if (exists) throw new ConflictException('Documento já cadastrado');
 
     return this.prisma.partner.create({
@@ -34,7 +40,10 @@ export class PartnersService {
         { document: { contains: search, mode: 'insensitive' } },
       ];
     }
-    return this.prisma.partner.findMany({ where, orderBy: { createdAt: 'desc' } });
+    return this.prisma.partner.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(id: string) {
@@ -48,7 +57,9 @@ export class PartnersService {
     if (!existing) throw new NotFoundException('Parceiro não encontrado');
 
     if (dto.document && dto.document !== existing.document) {
-      const exists = await this.prisma.partner.findUnique({ where: { document: dto.document } });
+      const exists = await this.prisma.partner.findUnique({
+        where: { document: dto.document },
+      });
       if (exists) throw new ConflictException('Documento já cadastrado');
     }
 
@@ -60,7 +71,10 @@ export class PartnersService {
         document: dto.document ?? existing.document,
         partnerDiscount: dto.partnerDiscount ?? existing.partnerDiscount,
         clientDiscount: dto.clientDiscount ?? existing.clientDiscount,
-        fixedDiscount: dto.fixedDiscount === undefined ? existing.fixedDiscount : dto.fixedDiscount,
+        fixedDiscount:
+          dto.fixedDiscount === undefined
+            ? existing.fixedDiscount
+            : dto.fixedDiscount,
         notes: dto.notes === undefined ? existing.notes : dto.notes,
         isActive: dto.isActive === undefined ? existing.isActive : dto.isActive,
       },
@@ -74,5 +88,3 @@ export class PartnersService {
     return { message: 'Parceiro deletado com sucesso' };
   }
 }
-
-

@@ -30,12 +30,15 @@ import { PrismaModule } from '../prisma/prisma.module';
     // Note: EnhancedJwtGuard não é global para não conflitar com o JWT guard existente
     // Ele deve ser usado explicitamente onde necessário
   ],
-  exports: [SecurityService, EncryptionService, BackupService, EnhancedPermissionsService],
+  exports: [
+    SecurityService,
+    EncryptionService,
+    BackupService,
+    EnhancedPermissionsService,
+  ],
 })
 export class SecurityModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(SecurityHeadersMiddleware)
-      .forRoutes('*'); // Aplicar headers de segurança em todas as rotas
+    consumer.apply(SecurityHeadersMiddleware).forRoutes('*'); // Aplicar headers de segurança em todas as rotas
   }
 }

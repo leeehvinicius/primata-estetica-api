@@ -1,11 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterTimeTrackingDto } from './dto/register-time-tracking.dto';
 import { ValidateTimeTrackingDto } from './dto/validate-time-tracking.dto';
 import { TimeTrackingQueryDto } from './dto/time-tracking-query.dto';
 import { UpdateTimeTrackingSettingsDto } from './dto/time-tracking-settings.dto';
-import { GenerateTimeTrackingReportDto, TimeTrackingReportQueryDto } from './dto/time-tracking-report.dto';
-import { TimeTracking, TimeTrackingStatus, TimeTrackingType, ValidationAction, ReportStatus } from '@prisma/client';
+import {
+  GenerateTimeTrackingReportDto,
+  TimeTrackingReportQueryDto,
+} from './dto/time-tracking-report.dto';
+import {
+  TimeTracking,
+  TimeTrackingStatus,
+  TimeTrackingType,
+  ValidationAction,
+  ReportStatus,
+} from '@prisma/client';
 import { Request } from 'express';
 import { PhotoCaptureService } from './services/photo-capture.service';
 import { LocationService } from './services/location.service';
@@ -21,14 +35,14 @@ export class TimeTrackingService {
   async registerTimeTracking(
     registerDto: RegisterTimeTrackingDto,
     userId: string,
-    request: Request
+    request: Request,
   ): Promise<TimeTracking> {
     // Buscar usuário logado
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: true
-      }
+        profile: true,
+      },
     });
 
     if (!user) {
@@ -45,9 +59,9 @@ export class TimeTrackingService {
         userId: user.id,
         type: registerDto.type,
         timestamp: {
-          gte: new Date(Date.now() - 5 * 60 * 1000) // Últimos 5 minutos
-        }
-      }
+          gte: new Date(Date.now() - 5 * 60 * 1000), // Últimos 5 minutos
+        },
+      },
     });
 
     if (recentRecord) {
@@ -62,7 +76,10 @@ export class TimeTrackingService {
     // Processar foto se fornecida
     let photoUrl = registerDto.photoUrl;
     if (registerDto.photoData) {
-      photoUrl = await this.photoCaptureService.processPhoto(registerDto.photoData, user.id);
+      photoUrl = await this.photoCaptureService.processPhoto(
+        registerDto.photoData,
+        user.id,
+      );
     }
 
     // Criar registro de ponto
@@ -89,22 +106,31 @@ export class TimeTrackingService {
       include: {
         user: {
           include: {
-            profile: true
-          }
-        }
-      }
+            profile: true,
+          },
+        },
+      },
     });
 
     return timeTracking;
   }
 
-  async getTimeTrackings(query: TimeTrackingQueryDto, userId: string): Promise<{
+  async getTimeTrackings(
+    query: TimeTrackingQueryDto,
+    userId: string,
+  ): Promise<{
     data: TimeTracking[];
     total: number;
     page: number;
     limit: number;
   }> {
-    const { page = 1, limit = 10, sortBy = 'timestamp', sortOrder = 'desc', ...filters } = query;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'timestamp',
+      sortOrder = 'desc',
+      ...filters
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -117,7 +143,7 @@ export class TimeTrackingService {
     // Se não for admin, só pode ver seus próprios registros
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true }
+      include: { profile: true },
     });
 
     if (!user) {
@@ -163,24 +189,24 @@ export class TimeTrackingService {
         include: {
           user: {
             include: {
-              profile: true
-            }
+              profile: true,
+            },
           },
           validator: {
             include: {
-              profile: true
-            }
-          }
-        }
+              profile: true,
+            },
+          },
+        },
       }),
-      this.prisma.timeTracking.count({ where })
+      this.prisma.timeTracking.count({ where }),
     ]);
 
     return {
       data,
       total,
       page,
-      limit
+      limit,
     };
   }
 
@@ -190,15 +216,15 @@ export class TimeTrackingService {
       include: {
         user: {
           include: {
-            profile: true
-          }
+            profile: true,
+          },
         },
         validator: {
           include: {
-            profile: true
-          }
-        }
-      }
+            profile: true,
+          },
+        },
+      },
     });
 
     if (!timeTracking) {
@@ -208,11 +234,16 @@ export class TimeTrackingService {
     // Verificar permissão
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true }
+      include: { profile: true },
     });
 
-    if (user?.profile?.role !== 'ADMINISTRADOR' && timeTracking.userId !== userId) {
-      throw new ForbiddenException('Você não tem permissão para visualizar este registro');
+    if (
+      user?.profile?.role !== 'ADMINISTRADOR' &&
+      timeTracking.userId !== userId
+    ) {
+      throw new ForbiddenException(
+        'Você não tem permissão para visualizar este registro',
+      );
     }
 
     return timeTracking;
@@ -220,10 +251,10 @@ export class TimeTrackingService {
 
   async validateTimeTracking(
     validateDto: ValidateTimeTrackingDto,
-    validatorId: string
+    validatorId: string,
   ): Promise<TimeTracking> {
     const timeTracking = await this.prisma.timeTracking.findUnique({
-      where: { id: validateDto.timeTrackingId }
+      where: { id: validateDto.timeTrackingId },
     });
 
     if (!timeTracking) {
@@ -233,16 +264,21 @@ export class TimeTrackingService {
     // Verificar se o usuário tem permissão para validar
     const validator = await this.prisma.user.findUnique({
       where: { id: validatorId },
-      include: { profile: true }
+      include: { profile: true },
     });
 
-    if (!validator || !['ADMINISTRADOR', 'MEDICO'].includes(validator.profile?.role || '')) {
-      throw new ForbiddenException('Você não tem permissão para validar registros de ponto');
+    if (
+      !validator ||
+      !['ADMINISTRADOR', 'MEDICO'].includes(validator.profile?.role || '')
+    ) {
+      throw new ForbiddenException(
+        'Você não tem permissão para validar registros de ponto',
+      );
     }
 
     const updateData: any = {
       validatedAt: new Date(),
-      validatedBy: validatorId
+      validatedBy: validatorId,
     };
 
     if (validateDto.action === ValidationAction.APPROVE) {
@@ -260,15 +296,15 @@ export class TimeTrackingService {
       include: {
         user: {
           include: {
-            profile: true
-          }
+            profile: true,
+          },
         },
         validator: {
           include: {
-            profile: true
-          }
-        }
-      }
+            profile: true,
+          },
+        },
+      },
     });
 
     // Criar registro de validação
@@ -278,8 +314,8 @@ export class TimeTrackingService {
         validatorId,
         action: validateDto.action,
         reason: validateDto.reason,
-        additionalInfo: validateDto.additionalInfo
-      }
+        additionalInfo: validateDto.additionalInfo,
+      },
     });
 
     return updatedTimeTracking;
@@ -287,27 +323,27 @@ export class TimeTrackingService {
 
   async updateTimeTrackingSettings(
     userId: string,
-    settingsDto: UpdateTimeTrackingSettingsDto
+    settingsDto: UpdateTimeTrackingSettingsDto,
   ) {
     return this.prisma.timeTrackingSettings.upsert({
       where: { userId },
       update: settingsDto,
       create: {
         userId,
-        ...settingsDto
-      }
+        ...settingsDto,
+      },
     });
   }
 
   async getTimeTrackingSettings(userId: string) {
     return this.prisma.timeTrackingSettings.findUnique({
-      where: { userId }
+      where: { userId },
     });
   }
 
   async generateTimeTrackingReport(
     reportDto: GenerateTimeTrackingReportDto,
-    generatorId: string
+    generatorId: string,
   ) {
     const { userId, periodStart, periodEnd, notes } = reportDto;
 
@@ -317,11 +353,11 @@ export class TimeTrackingService {
         userId,
         timestamp: {
           gte: new Date(periodStart),
-          lte: new Date(periodEnd)
+          lte: new Date(periodEnd),
         },
-        status: TimeTrackingStatus.APPROVED
+        status: TimeTrackingStatus.APPROVED,
       },
-      orderBy: { timestamp: 'asc' }
+      orderBy: { timestamp: 'asc' },
     });
 
     // Calcular horas trabalhadas
@@ -340,30 +376,33 @@ export class TimeTrackingService {
         daysAbsent: report.daysAbsent,
         status: ReportStatus.PENDING,
         generatedBy: generatorId,
-        notes
+        notes,
       },
       include: {
         user: {
           include: {
-            profile: true
-          }
+            profile: true,
+          },
         },
         generator: {
           include: {
-            profile: true
-          }
-        }
-      }
+            profile: true,
+          },
+        },
+      },
     });
   }
 
-  async getTimeTrackingReports(query: TimeTrackingReportQueryDto, userId: string) {
+  async getTimeTrackingReports(
+    query: TimeTrackingReportQueryDto,
+    userId: string,
+  ) {
     const where: any = {};
 
     // Se não for admin, só pode ver seus próprios relatórios
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true }
+      include: { profile: true },
     });
 
     if (user?.profile?.role !== 'ADMINISTRADOR') {
@@ -393,33 +432,40 @@ export class TimeTrackingService {
       include: {
         user: {
           include: {
-            profile: true
-          }
+            profile: true,
+          },
         },
         generator: {
           include: {
-            profile: true
-          }
+            profile: true,
+          },
         },
         approver: {
           include: {
-            profile: true
-          }
-        }
+            profile: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-
   private async validateLocation(location: any, userId: string): Promise<void> {
     // Validar coordenadas
-    if (!this.locationService.validateCoordinates(location.latitude, location.longitude)) {
+    if (
+      !this.locationService.validateCoordinates(
+        location.latitude,
+        location.longitude,
+      )
+    ) {
       throw new BadRequestException('Coordenadas inválidas');
     }
 
     // Validar precisão
-    if (location.accuracy && !this.locationService.validateAccuracy(location.accuracy)) {
+    if (
+      location.accuracy &&
+      !this.locationService.validateAccuracy(location.accuracy)
+    ) {
       throw new BadRequestException('Precisão da localização muito baixa');
     }
 
@@ -430,7 +476,7 @@ export class TimeTrackingService {
 
     // Buscar configurações do usuário
     const settings = await this.prisma.timeTrackingSettings.findUnique({
-      where: { userId }
+      where: { userId },
     });
 
     if (!settings?.requireLocation) return;
@@ -460,7 +506,7 @@ export class TimeTrackingService {
       overtimeHours: 0.0,
       breakHours: 1.0,
       daysWorked: 1,
-      daysAbsent: 0
+      daysAbsent: 0,
     };
   }
 }

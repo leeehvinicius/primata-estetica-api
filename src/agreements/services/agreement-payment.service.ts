@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -19,7 +23,9 @@ export class AgreementPaymentService {
     });
 
     if (!agreement) {
-      throw new NotFoundException(`Convênio com ID ${data.agreementId} não encontrado`);
+      throw new NotFoundException(
+        `Convênio com ID ${data.agreementId} não encontrado`,
+      );
     }
 
     // Verifica se o pagamento existe
@@ -28,26 +34,39 @@ export class AgreementPaymentService {
     });
 
     if (!payment) {
-      throw new NotFoundException(`Pagamento com ID ${data.paymentId} não encontrado`);
+      throw new NotFoundException(
+        `Pagamento com ID ${data.paymentId} não encontrado`,
+      );
     }
 
     // Verifica se já existe um pagamento de convênio para este pagamento
-    const existingAgreementPayment = await this.prisma.agreementPayment.findFirst({
-      where: { paymentId: data.paymentId },
-    });
+    const existingAgreementPayment =
+      await this.prisma.agreementPayment.findFirst({
+        where: { paymentId: data.paymentId },
+      });
 
     if (existingAgreementPayment) {
-      throw new BadRequestException('Já existe um pagamento de convênio para este pagamento');
+      throw new BadRequestException(
+        'Já existe um pagamento de convênio para este pagamento',
+      );
     }
 
     // Verifica se os valores são válidos
-    if (data.amountCovered < 0 || data.amountClient < 0 || data.discountApplied < 0) {
-      throw new BadRequestException('Valores devem ser maiores ou iguais a zero');
+    if (
+      data.amountCovered < 0 ||
+      data.amountClient < 0 ||
+      data.discountApplied < 0
+    ) {
+      throw new BadRequestException(
+        'Valores devem ser maiores ou iguais a zero',
+      );
     }
 
     const totalAmount = data.amountCovered + data.amountClient;
     if (Math.abs(totalAmount - Number(payment.finalAmount)) > 0.01) {
-      throw new BadRequestException('Soma dos valores cobertos e do cliente deve ser igual ao valor final do pagamento');
+      throw new BadRequestException(
+        'Soma dos valores cobertos e do cliente deve ser igual ao valor final do pagamento',
+      );
     }
 
     return this.prisma.agreementPayment.create({
@@ -96,7 +115,9 @@ export class AgreementPaymentService {
     });
 
     if (!agreementPayment) {
-      throw new NotFoundException(`Pagamento de convênio com ID ${id} não encontrado`);
+      throw new NotFoundException(
+        `Pagamento de convênio com ID ${id} não encontrado`,
+      );
     }
 
     return agreementPayment;
@@ -104,7 +125,7 @@ export class AgreementPaymentService {
 
   async findByAgreementId(agreementId: string) {
     return this.prisma.agreementPayment.findMany({
-      where: { 
+      where: {
         agreementId,
         isActive: true,
       },
@@ -124,7 +145,7 @@ export class AgreementPaymentService {
 
   async findByClientId(clientId: string) {
     return this.prisma.agreementPayment.findMany({
-      where: { 
+      where: {
         agreement: {
           clientId,
         },
@@ -150,7 +171,11 @@ export class AgreementPaymentService {
     });
   }
 
-  async findByHealthPlanId(healthPlanId: string, startDate?: Date, endDate?: Date) {
+  async findByHealthPlanId(
+    healthPlanId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
     const whereClause: any = {
       agreement: {
         healthPlanId,
@@ -187,25 +212,34 @@ export class AgreementPaymentService {
     });
   }
 
-  async update(id: string, data: {
-    amountCovered?: number;
-    amountClient?: number;
-    discountApplied?: number;
-    isActive?: boolean;
-  }) {
+  async update(
+    id: string,
+    data: {
+      amountCovered?: number;
+      amountClient?: number;
+      discountApplied?: number;
+      isActive?: boolean;
+    },
+  ) {
     await this.findById(id); // Verifica se existe
 
     // Verifica se os valores são válidos
     if (data.amountCovered !== undefined && data.amountCovered < 0) {
-      throw new BadRequestException('Valor coberto deve ser maior ou igual a zero');
+      throw new BadRequestException(
+        'Valor coberto deve ser maior ou igual a zero',
+      );
     }
 
     if (data.amountClient !== undefined && data.amountClient < 0) {
-      throw new BadRequestException('Valor do cliente deve ser maior ou igual a zero');
+      throw new BadRequestException(
+        'Valor do cliente deve ser maior ou igual a zero',
+      );
     }
 
     if (data.discountApplied !== undefined && data.discountApplied < 0) {
-      throw new BadRequestException('Desconto aplicado deve ser maior ou igual a zero');
+      throw new BadRequestException(
+        'Desconto aplicado deve ser maior ou igual a zero',
+      );
     }
 
     return this.prisma.agreementPayment.update({
@@ -231,7 +265,7 @@ export class AgreementPaymentService {
   async processPayment(paymentData: any, agreementId: string) {
     // Verifica se o convênio existe e está ativo
     const agreement = await this.prisma.agreement.findUnique({
-      where: { 
+      where: {
         id: agreementId,
         isActive: true,
       },
@@ -249,7 +283,9 @@ export class AgreementPaymentService {
     });
 
     if (!agreement) {
-      throw new NotFoundException(`Convênio ativo com ID ${agreementId} não encontrado`);
+      throw new NotFoundException(
+        `Convênio ativo com ID ${agreementId} não encontrado`,
+      );
     }
 
     // Verifica se o convênio não expirou
@@ -263,15 +299,13 @@ export class AgreementPaymentService {
     let discountPercentage = 0;
 
     // Busca desconto específico para o serviço
-    let discount = agreement.discounts.find(d => 
-      d.serviceId === paymentData.serviceId && !d.packageId
+    let discount = agreement.discounts.find(
+      (d) => d.serviceId === paymentData.serviceId && !d.packageId,
     );
 
     // Se não encontrar desconto específico, busca desconto geral
     if (!discount) {
-      discount = agreement.discounts.find(d => 
-        !d.serviceId && !d.packageId
-      );
+      discount = agreement.discounts.find((d) => !d.serviceId && !d.packageId);
     }
 
     if (discount) {
@@ -330,11 +364,20 @@ export class AgreementPaymentService {
 
   async getPaymentStatistics(agreementId: string) {
     const payments = await this.findByAgreementId(agreementId);
-    
+
     const totalPayments = payments.length;
-    const totalAmountCovered = payments.reduce((sum, ap) => sum + Number(ap.amountCovered), 0);
-    const totalAmountClient = payments.reduce((sum, ap) => sum + Number(ap.amountClient), 0);
-    const totalDiscounts = payments.reduce((sum, ap) => sum + Number(ap.discountApplied), 0);
+    const totalAmountCovered = payments.reduce(
+      (sum, ap) => sum + Number(ap.amountCovered),
+      0,
+    );
+    const totalAmountClient = payments.reduce(
+      (sum, ap) => sum + Number(ap.amountClient),
+      0,
+    );
+    const totalDiscounts = payments.reduce(
+      (sum, ap) => sum + Number(ap.discountApplied),
+      0,
+    );
 
     // Agrupa por serviço
     const serviceBreakdown = payments.reduce((acc, ap) => {
@@ -359,19 +402,37 @@ export class AgreementPaymentService {
       totalAmountCovered,
       totalAmountClient,
       totalDiscounts,
-      averageDiscountPercentage: totalPayments > 0 ? (totalDiscounts / totalAmountCovered) * 100 : 0,
+      averageDiscountPercentage:
+        totalPayments > 0 ? (totalDiscounts / totalAmountCovered) * 100 : 0,
       serviceBreakdown,
       payments,
     };
   }
 
-  async getHealthPlanPaymentStatistics(healthPlanId: string, startDate?: Date, endDate?: Date) {
-    const payments = await this.findByHealthPlanId(healthPlanId, startDate, endDate);
-    
+  async getHealthPlanPaymentStatistics(
+    healthPlanId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    const payments = await this.findByHealthPlanId(
+      healthPlanId,
+      startDate,
+      endDate,
+    );
+
     const totalPayments = payments.length;
-    const totalAmountCovered = payments.reduce((sum, ap) => sum + Number(ap.amountCovered), 0);
-    const totalAmountClient = payments.reduce((sum, ap) => sum + Number(ap.amountClient), 0);
-    const totalDiscounts = payments.reduce((sum, ap) => sum + Number(ap.discountApplied), 0);
+    const totalAmountCovered = payments.reduce(
+      (sum, ap) => sum + Number(ap.amountCovered),
+      0,
+    );
+    const totalAmountClient = payments.reduce(
+      (sum, ap) => sum + Number(ap.amountClient),
+      0,
+    );
+    const totalDiscounts = payments.reduce(
+      (sum, ap) => sum + Number(ap.discountApplied),
+      0,
+    );
 
     // Agrupa por cliente
     const clientBreakdown = payments.reduce((acc, ap) => {
@@ -396,7 +457,8 @@ export class AgreementPaymentService {
       totalAmountCovered,
       totalAmountClient,
       totalDiscounts,
-      averageDiscountPercentage: totalPayments > 0 ? (totalDiscounts / totalAmountCovered) * 100 : 0,
+      averageDiscountPercentage:
+        totalPayments > 0 ? (totalDiscounts / totalAmountCovered) * 100 : 0,
       clientBreakdown,
       payments,
     };
@@ -404,7 +466,7 @@ export class AgreementPaymentService {
 
   async generateReceipt(agreementPaymentId: string) {
     const agreementPayment = await this.findById(agreementPaymentId);
-    
+
     return {
       receiptNumber: `AG-${agreementPayment.id.slice(-8).toUpperCase()}`,
       issueDate: new Date(),

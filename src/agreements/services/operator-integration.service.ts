@@ -50,7 +50,9 @@ export class OperatorIntegrationService {
     });
 
     if (!healthPlan) {
-      throw new NotFoundException(`Plano de saúde com ID ${data.healthPlanId} não encontrado`);
+      throw new NotFoundException(
+        `Plano de saúde com ID ${data.healthPlanId} não encontrado`,
+      );
     }
 
     return this.prisma.operatorIntegration.create({
@@ -85,7 +87,7 @@ export class OperatorIntegrationService {
 
   async findByHealthPlanId(healthPlanId: string) {
     return this.prisma.operatorIntegration.findMany({
-      where: { 
+      where: {
         healthPlanId,
         isActive: true,
       },
@@ -95,13 +97,16 @@ export class OperatorIntegrationService {
     });
   }
 
-  async update(id: string, data: {
-    integrationType?: string;
-    endpoint?: string;
-    credentials?: any;
-    settings?: any;
-    isActive?: boolean;
-  }) {
+  async update(
+    id: string,
+    data: {
+      integrationType?: string;
+      endpoint?: string;
+      credentials?: any;
+      settings?: any;
+      isActive?: boolean;
+    },
+  ) {
     await this.findById(id); // Verifica se existe
 
     return this.prisma.operatorIntegration.update({
@@ -166,14 +171,10 @@ export class OperatorIntegrationService {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.post(
-          `${integration.endpoint}/invoices`,
-          invoiceData,
-          {
-            timeout: 30000,
-            headers: this.buildHeaders(integration),
-          }
-        )
+        this.httpService.post(`${integration.endpoint}/invoices`, invoiceData, {
+          timeout: 30000,
+          headers: this.buildHeaders(integration),
+        }),
       );
 
       return {
@@ -197,13 +198,10 @@ export class OperatorIntegrationService {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.get(
-          `${integration.endpoint}/payments/${paymentId}`,
-          {
-            timeout: 15000,
-            headers: this.buildHeaders(integration),
-          }
-        )
+        this.httpService.get(`${integration.endpoint}/payments/${paymentId}`, {
+          timeout: 15000,
+          headers: this.buildHeaders(integration),
+        }),
       );
 
       return {
@@ -215,7 +213,9 @@ export class OperatorIntegrationService {
         response: response.data,
       };
     } catch (error) {
-      throw new Error(`Erro ao verificar status do pagamento: ${error.message}`);
+      throw new Error(
+        `Erro ao verificar status do pagamento: ${error.message}`,
+      );
     }
   }
 
@@ -234,8 +234,8 @@ export class OperatorIntegrationService {
           {
             timeout: 20000,
             headers: this.buildHeaders(integration),
-          }
-        )
+          },
+        ),
       );
 
       return {
@@ -265,8 +265,8 @@ export class OperatorIntegrationService {
           {
             timeout: 30000,
             headers: this.buildHeaders(integration),
-          }
-        )
+          },
+        ),
       );
 
       return {
@@ -295,8 +295,8 @@ export class OperatorIntegrationService {
           {
             timeout: 15000,
             headers: this.buildHeaders(integration),
-          }
-        )
+          },
+        ),
       );
 
       return {
@@ -307,7 +307,9 @@ export class OperatorIntegrationService {
         response: response.data,
       };
     } catch (error) {
-      throw new Error(`Erro ao obter informações de cobertura: ${error.message}`);
+      throw new Error(
+        `Erro ao obter informações de cobertura: ${error.message}`,
+      );
     }
   }
 
@@ -326,8 +328,8 @@ export class OperatorIntegrationService {
           {
             timeout: 60000,
             headers: this.buildHeaders(integration),
-          }
-        )
+          },
+        ),
       );
 
       return {
@@ -350,13 +352,10 @@ export class OperatorIntegrationService {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.get(
-          `${integration.endpoint}/logs?limit=${limit}`,
-          {
-            timeout: 15000,
-            headers: this.buildHeaders(integration),
-          }
-        )
+        this.httpService.get(`${integration.endpoint}/logs?limit=${limit}`, {
+          timeout: 15000,
+          headers: this.buildHeaders(integration),
+        }),
       );
 
       return {
@@ -406,12 +405,13 @@ export class OperatorIntegrationService {
 
   async getIntegrationStatistics(healthPlanId: string) {
     const integrations = await this.findByHealthPlanId(healthPlanId);
-    
+
     const totalIntegrations = integrations.length;
-    const activeIntegrations = integrations.filter(i => i.isActive).length;
-    
+    const activeIntegrations = integrations.filter((i) => i.isActive).length;
+
     const integrationTypeCounts = integrations.reduce((acc, integration) => {
-      acc[integration.integrationType] = (acc[integration.integrationType] || 0) + 1;
+      acc[integration.integrationType] =
+        (acc[integration.integrationType] || 0) + 1;
       return acc;
     }, {});
 
@@ -437,7 +437,9 @@ export class OperatorIntegrationService {
       }
     }
 
-    const successfulConnections = connectionTests.filter(test => test.success).length;
+    const successfulConnections = connectionTests.filter(
+      (test) => test.success,
+    ).length;
 
     return {
       totalIntegrations,
@@ -445,13 +447,16 @@ export class OperatorIntegrationService {
       integrationTypeCounts,
       connectionTests,
       successfulConnections,
-      connectionSuccessRate: totalIntegrations > 0 ? (successfulConnections / totalIntegrations) * 100 : 0,
+      connectionSuccessRate:
+        totalIntegrations > 0
+          ? (successfulConnections / totalIntegrations) * 100
+          : 0,
     };
   }
 
   async validateIntegrationConfiguration(integrationId: string) {
     const integration = await this.findById(integrationId);
-    
+
     const validation: ValidationResult = {
       integrationId,
       isValid: true,
@@ -466,11 +471,15 @@ export class OperatorIntegrationService {
     }
 
     if (!integration.endpoint) {
-      validation.warnings.push('Endpoint não configurado - algumas funcionalidades podem não estar disponíveis');
+      validation.warnings.push(
+        'Endpoint não configurado - algumas funcionalidades podem não estar disponíveis',
+      );
     }
 
     if (!integration.credentials) {
-      validation.warnings.push('Credenciais não configuradas - autenticação pode falhar');
+      validation.warnings.push(
+        'Credenciais não configuradas - autenticação pode falhar',
+      );
     }
 
     // Validações específicas por tipo
@@ -482,7 +491,9 @@ export class OperatorIntegrationService {
         }
         const apiCredentials = integration.credentials as OperatorCredentials;
         if (!apiCredentials?.apiKey && !apiCredentials?.authorization) {
-          validation.warnings.push('Credenciais de autenticação recomendadas para APIs');
+          validation.warnings.push(
+            'Credenciais de autenticação recomendadas para APIs',
+          );
         }
         break;
 
@@ -496,12 +507,16 @@ export class OperatorIntegrationService {
       case 'EMAIL':
         const emailCredentials = integration.credentials as OperatorCredentials;
         if (!emailCredentials?.email) {
-          validation.warnings.push('Email de contato recomendado para integrações por email');
+          validation.warnings.push(
+            'Email de contato recomendado para integrações por email',
+          );
         }
         break;
 
       default:
-        validation.warnings.push(`Tipo de integração '${integration.integrationType}' não reconhecido`);
+        validation.warnings.push(
+          `Tipo de integração '${integration.integrationType}' não reconhecido`,
+        );
     }
 
     return validation;

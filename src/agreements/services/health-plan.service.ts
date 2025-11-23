@@ -64,12 +64,15 @@ export class HealthPlanService {
     return healthPlan;
   }
 
-  async update(id: string, data: {
-    name?: string;
-    planType?: string;
-    operatorCode?: string;
-    isActive?: boolean;
-  }) {
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      planType?: string;
+      operatorCode?: string;
+      isActive?: boolean;
+    },
+  ) {
     await this.findById(id); // Verifica se existe
 
     return this.prisma.healthPlan.update({
@@ -90,7 +93,7 @@ export class HealthPlanService {
 
   async findByOperatorCode(operatorCode: string) {
     return this.prisma.healthPlan.findFirst({
-      where: { 
+      where: {
         operatorCode,
         isActive: true,
       },
@@ -111,9 +114,11 @@ export class HealthPlanService {
 
   async getHealthPlanStatistics(id: string) {
     const healthPlan = await this.findById(id);
-    
+
     const totalAgreements = healthPlan.agreements.length;
-    const activeAgreements = healthPlan.agreements.filter(a => a.isActive).length;
+    const activeAgreements = healthPlan.agreements.filter(
+      (a) => a.isActive,
+    ).length;
     const totalCoverageLimits = healthPlan.coverageLimits.length;
     const totalIntegrations = healthPlan.operatorIntegrations.length;
 
