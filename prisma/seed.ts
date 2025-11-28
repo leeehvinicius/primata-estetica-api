@@ -62,15 +62,16 @@ async function main() {
           },
         },
       });
+
       console.log(
         `✅ ${userData.role} criado: ${userData.email} / ${userData.password}`,
       );
+
     } else {
       console.log(`ℹ️ ${userData.role} já existe: ${userData.email}`);
     }
   }
 
->>>>>>> b709602 (atualziaçao de script)
   console.log('\n🎯 Usuários de teste criados:');
   console.log('👑 Administrador: admin@primata.com / admin123');
   console.log('👨‍⚕️ Médico: medico@primata.com / medico123');
