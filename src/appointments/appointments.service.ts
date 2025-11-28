@@ -92,6 +92,10 @@ export class AppointmentsService {
       appointmentData.professionalId = dto.professionalId;
     }
 
+    if (dto.partnerId) {
+      appointmentData.partnerId = dto.partnerId;
+    }
+
     if (dto.notes) {
       appointmentData.notes = dto.notes;
     }
@@ -139,9 +143,8 @@ export class AppointmentsService {
       },
     });
 
-    // Se houver parceiro informado, gravar e calcular desconto baseado nos percentuais/valor fixo do parceiro
+    // Se houver parceiro informado, calcular desconto baseado nos percentuais/valor fixo do parceiro
     if (dto.partnerId) {
-      appointmentData.partnerId = dto.partnerId;
       try {
         const baseAmount = Number(appointment.service.currentPrice);
         const partner = await (this.prisma as any).partner.findFirst({
