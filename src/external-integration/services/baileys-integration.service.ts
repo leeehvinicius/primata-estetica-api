@@ -106,7 +106,7 @@ export class BaileysIntegrationService implements OnModuleDestroy {
       // Aguardar QR Code se necessário (timeout de 15 segundos)
       let qrCodePromise: Promise<string | null> | null = null;
       
-      if (!hasCredentials) {
+      if (!hasCredentials && this.socket) {
         qrCodePromise = new Promise<string | null>((resolve) => {
           const timeout = setTimeout(() => {
             this.logger.warn('Timeout aguardando QR Code');
@@ -116,7 +116,9 @@ export class BaileysIntegrationService implements OnModuleDestroy {
           const handler = async (update: any) => {
             if (update.qr) {
               clearTimeout(timeout);
-              this.socket?.ev.off('connection.update', handler);
+              if (this.socket) {
+                this.socket.ev.off('connection.update', handler);
+              }
               try {
                 const qrCode = await toDataURL(update.qr);
                 this.logger.log(`QR Code gerado com sucesso (${qrCode.substring(0, 50)}...)`);
@@ -130,7 +132,11 @@ export class BaileysIntegrationService implements OnModuleDestroy {
             }
           };
 
-          this.socket.ev.on('connection.update', handler);
+          if (this.socket) {
+            this.socket.ev.on('connection.update', handler);
+          } else {
+            resolve(null);
+          }
         });
       }
 
