@@ -42,15 +42,19 @@ export class ServicesService {
       }
     }
 
-    // Validar e obter categoria
+    // Validar e obter categoria (criar se não existir)
     let serviceCategoryId: string;
+    let categoryName: string | undefined;
+    let providedId: string | undefined;
     
     // Prioridade: serviceCategoryId > categoryId > category (como ID ou nome)
     if (dto.serviceCategoryId) {
       // Se serviceCategoryId foi fornecido, usar diretamente
+      providedId = dto.serviceCategoryId;
       serviceCategoryId = dto.serviceCategoryId;
     } else if (dto.categoryId) {
       // Se categoryId foi fornecido, usar diretamente
+      providedId = dto.categoryId;
       serviceCategoryId = dto.categoryId;
     } else if (dto.category) {
       // Verificar se category parece ser um ID (CUID geralmente começa com 'c' e tem ~25 caracteres)
@@ -58,21 +62,21 @@ export class ServicesService {
       
       if (looksLikeId) {
         // Se parece um ID, tentar buscar diretamente pelo ID
+        providedId = dto.category;
         serviceCategoryId = dto.category;
       } else {
-        // Se não parece um ID, buscar pelo nome
+        // Se não parece um ID, tratar como nome
+        categoryName = dto.category;
+        // Buscar pelo nome
         const categoryByName = await (this.prisma as any).serviceCategory.findFirst({
           where: { 
-            name: { equals: dto.category, mode: 'insensitive' },
-            isActive: true
+            name: { equals: dto.category, mode: 'insensitive' }
           },
         });
-        if (!categoryByName) {
-          throw new NotFoundException(
-            `Categoria de serviço com nome "${dto.category}" não encontrada`
-          );
+        if (categoryByName) {
+          serviceCategoryId = categoryByName.id;
         }
-        serviceCategoryId = categoryByName.id;
+        // Se não encontrou, será criada abaixo com o nome fornecido
       }
     } else {
       throw new BadRequestException(
@@ -80,15 +84,62 @@ export class ServicesService {
       );
     }
 
-    // Validar que a categoria existe
-    const category = await (this.prisma as any).serviceCategory.findUnique({
-      where: { id: serviceCategoryId },
-    });
+    // Validar que a categoria existe, ou criar se não existir
+    let category = serviceCategoryId 
+      ? await (this.prisma as any).serviceCategory.findUnique({
+          where: { id: serviceCategoryId },
+        })
+      : null;
+    
     if (!category) {
-      throw new NotFoundException(
-        `Categoria de serviço com ID "${serviceCategoryId}" não encontrada. Verifique se o ID está correto ou se a categoria existe.`
+      // Se não existe, criar automaticamente
+      if (categoryName) {
+        // Se temos um nome, criar com esse nome (Prisma gerará o ID)
+        category = await (this.prisma as any).serviceCategory.create({
+          data: {
+            name: categoryName,
+            description: null,
+            isActive: true,
+            createdBy: createdBy,
+          },
+        });
+        serviceCategoryId = category.id;
+      } else if (providedId) {
+        // Se temos apenas um ID que não existe, criar com um nome gerado
+        // Usar o ID fornecido como parte do nome para facilitar identificação
+        const generatedName = `CATEGORY_${providedId.substring(0, 12).toUpperCase()}`;
+        try {
+          category = await (this.prisma as any).serviceCategory.create({
+            data: {
+              id: providedId,
+              name: generatedName,
+              description: null,
+              isActive: true,
+              createdBy: createdBy,
+            },
+          });
+          serviceCategoryId = category.id;
+        } catch (error: any) {
+          // Se falhar ao criar com o ID fornecido (pode ser conflito), criar sem especificar ID
+          category = await (this.prisma as any).serviceCategory.create({
+            data: {
+              name: generatedName,
+              description: null,
+              isActive: true,
+              createdBy: createdBy,
+            },
+          });
+          serviceCategoryId = category.id;
+        }
+      }
+    }
+    
+    if (!category) {
+      throw new BadRequestException(
+        'Não foi possível criar ou encontrar a categoria de serviço'
       );
     }
+    
     if (!category.isActive) {
       throw new BadRequestException(
         `Categoria de serviço com ID "${serviceCategoryId}" está inativa`
