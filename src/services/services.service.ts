@@ -43,7 +43,7 @@ export class ServicesService {
     }
 
     // Validar e obter categoria (criar se não existir)
-    let serviceCategoryId: string;
+    let serviceCategoryId: string | undefined;
     let categoryName: string | undefined;
     let providedId: string | undefined;
     
@@ -134,7 +134,8 @@ export class ServicesService {
       }
     }
     
-    if (!category) {
+    // Garantir que temos uma categoria e um ID válido
+    if (!category || !serviceCategoryId) {
       throw new BadRequestException(
         'Não foi possível criar ou encontrar a categoria de serviço'
       );
