@@ -108,6 +108,11 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'security_configuration', actions: ['read', 'update'] },
     // Partners module
     { resource: 'partners', actions: ['create', 'read', 'update', 'delete'] },
+    // External integrations
+    {
+      resource: 'external-integration',
+      actions: ['create', 'read', 'update', 'delete'],
+    },
   ],
   MEDICO: [
     { resource: 'patients', actions: ['read', 'update'] },
@@ -181,6 +186,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'dashboard', actions: ['read'] },
     // Partners module
     { resource: 'partners', actions: ['create', 'read', 'update'] },
+    // External integrations
+    { resource: 'external-integration', actions: ['read'] },
   ],
   TÉCNICO_DE_ENFERMAGEM: [
     { resource: 'patients', actions: ['read', 'update'] },
