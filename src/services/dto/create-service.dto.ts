@@ -18,9 +18,21 @@ export class CreateServiceDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'ID da categoria do serviço' })
+  @ApiProperty({ 
+    description: 'ID da categoria do serviço (opcional se category for fornecido)',
+    required: false 
+  })
+  @IsOptional()
   @IsString()
-  serviceCategoryId: string;
+  serviceCategoryId?: string;
+
+  @ApiProperty({ 
+    description: 'Nome da categoria do serviço (opcional se serviceCategoryId for fornecido). Ex: FACIAL_TREATMENT',
+    required: false 
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
 
   @ApiProperty({ description: 'Duração em minutos' })
   @IsNumber()

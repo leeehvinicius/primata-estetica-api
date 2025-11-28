@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -41,9 +42,35 @@ export class ServicesService {
       }
     }
 
-    // Validar categoria
+    // Validar e obter categoria
+    let serviceCategoryId: string;
+    
+    if (dto.serviceCategoryId) {
+      // Se serviceCategoryId foi fornecido, usar diretamente
+      serviceCategoryId = dto.serviceCategoryId;
+    } else if (dto.category) {
+      // Se category (nome) foi fornecido, buscar pelo nome
+      const categoryByName = await (this.prisma as any).serviceCategory.findFirst({
+        where: { 
+          name: { equals: dto.category, mode: 'insensitive' },
+          isActive: true
+        },
+      });
+      if (!categoryByName) {
+        throw new NotFoundException(
+          `Categoria de serviço com nome "${dto.category}" não encontrada`
+        );
+      }
+      serviceCategoryId = categoryByName.id;
+    } else {
+      throw new BadRequestException(
+        'É necessário fornecer serviceCategoryId ou category'
+      );
+    }
+
+    // Validar que a categoria existe
     const category = await (this.prisma as any).serviceCategory.findUnique({
-      where: { id: dto.serviceCategoryId },
+      where: { id: serviceCategoryId },
     });
     if (!category) {
       throw new NotFoundException('Categoria de serviço não encontrada');
@@ -51,7 +78,7 @@ export class ServicesService {
 
     const serviceData: any = {
       name: dto.name,
-      serviceCategoryId: dto.serviceCategoryId,
+      serviceCategoryId: serviceCategoryId,
       duration: dto.duration,
       basePrice: dto.basePrice,
       currentPrice: dto.currentPrice,
