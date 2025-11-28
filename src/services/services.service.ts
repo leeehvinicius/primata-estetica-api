@@ -297,13 +297,97 @@ export class ServicesService {
     // Adicionar campos que foram fornecidos
     if (dto.name !== undefined) updateData.name = dto.name;
     if (dto.description !== undefined) updateData.description = dto.description;
-    if (dto.serviceCategoryId !== undefined) {
-      const category = await (this.prisma as any).serviceCategory.findUnique({
-        where: { id: dto.serviceCategoryId },
-      });
-      if (!category)
-        throw new NotFoundException('Categoria de serviço não encontrada');
-      updateData.serviceCategoryId = dto.serviceCategoryId;
+    
+    // Processar categoria (mesma lógica do create)
+    if (dto.serviceCategoryId !== undefined || dto.categoryId !== undefined || dto.category !== undefined) {
+      let serviceCategoryId: string | undefined;
+      let categoryName: string | undefined;
+      let providedId: string | undefined;
+      
+      // Prioridade: serviceCategoryId > categoryId > category (como ID ou nome)
+      if (dto.serviceCategoryId) {
+        providedId = dto.serviceCategoryId;
+        serviceCategoryId = dto.serviceCategoryId;
+      } else if (dto.categoryId) {
+        providedId = dto.categoryId;
+        serviceCategoryId = dto.categoryId;
+      } else if (dto.category) {
+        const looksLikeId = /^c[a-z0-9]{24}$/i.test(dto.category);
+        if (looksLikeId) {
+          providedId = dto.category;
+          serviceCategoryId = dto.category;
+        } else {
+          categoryName = dto.category;
+          const categoryByName = await (this.prisma as any).serviceCategory.findFirst({
+            where: { 
+              name: { equals: dto.category, mode: 'insensitive' }
+            },
+          });
+          if (categoryByName) {
+            serviceCategoryId = categoryByName.id;
+          }
+        }
+      }
+
+      // Validar que a categoria existe, ou criar se não existir
+      let category = serviceCategoryId 
+        ? await (this.prisma as any).serviceCategory.findUnique({
+            where: { id: serviceCategoryId },
+          })
+        : null;
+      
+      if (!category) {
+        // Se não existe, criar automaticamente
+        if (categoryName) {
+          category = await (this.prisma as any).serviceCategory.create({
+            data: {
+              name: categoryName,
+              description: null,
+              isActive: true,
+              createdBy: existingService.createdBy,
+            },
+          });
+          serviceCategoryId = category.id;
+        } else if (providedId) {
+          const generatedName = `CATEGORY_${providedId.substring(0, 12).toUpperCase()}`;
+          try {
+            category = await (this.prisma as any).serviceCategory.create({
+              data: {
+                id: providedId,
+                name: generatedName,
+                description: null,
+                isActive: true,
+                createdBy: existingService.createdBy,
+              },
+            });
+            serviceCategoryId = category.id;
+          } catch (error: any) {
+            category = await (this.prisma as any).serviceCategory.create({
+              data: {
+                name: generatedName,
+                description: null,
+                isActive: true,
+                createdBy: existingService.createdBy,
+              },
+            });
+            serviceCategoryId = category.id;
+          }
+        }
+      }
+      
+      if (!category || !serviceCategoryId) {
+        throw new BadRequestException(
+          'Não foi possível criar ou encontrar a categoria de serviço'
+        );
+      }
+      
+      if (!category.isActive) {
+        throw new BadRequestException(
+          `Categoria de serviço com ID "${serviceCategoryId}" está inativa`
+        );
+      }
+      
+      updateData.serviceCategoryId = serviceCategoryId;
     }
     if (dto.duration !== undefined) updateData.duration = dto.duration;
     if (dto.basePrice !== undefined) updateData.basePrice = dto.basePrice;
@@ -357,6 +441,7 @@ export class ServicesService {
     return (this.prisma as any).service.update({
       where: { id },
       data: { isActive: !service.isActive },
+      include: { category: { select: { id: true, name: true } } },
     });
   }
 

@@ -19,10 +19,29 @@ export class UpdateServiceDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'ID da categoria do serviço', required: false })
+  @ApiProperty({ 
+    description: 'ID da categoria do serviço (opcional se category ou categoryId for fornecido)',
+    required: false 
+  })
   @IsOptional()
   @IsString()
   serviceCategoryId?: string;
+
+  @ApiProperty({ 
+    description: 'ID da categoria do serviço (alias para serviceCategoryId)',
+    required: false 
+  })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiProperty({ 
+    description: 'Nome da categoria do serviço ou ID (opcional se serviceCategoryId/categoryId for fornecido). Ex: FACIAL_TREATMENT',
+    required: false 
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
 
   @ApiProperty({ description: 'Duração em minutos', required: false })
   @IsOptional()
