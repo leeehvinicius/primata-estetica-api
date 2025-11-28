@@ -3,16 +3,23 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 // Parceiros: desconto simples configurado no parceiro
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { ListAppointmentsDto } from './dto/list-appointments.dto';
+import { BaileysIntegrationService } from '../external-integration/services/baileys-integration.service';
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(AppointmentsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private baileysService: BaileysIntegrationService,
+  ) {}
 
   async create(dto: CreateAppointmentDto, userId: string) {
     // Se userId não foi fornecido, buscar um usuário admin padrão
@@ -960,5 +967,243 @@ export class AppointmentsService {
       'SATURDAY',
     ];
     return days[date.getDay()];
+  }
+
+  /**
+   * Enviar lembretes automáticos para agendamentos que ocorrem em 1 hora
+   * Esta função é chamada por um cron job a cada 5 minutos
+   */
+  async sendReminders(): Promise<{
+    success: boolean;
+    totalFound: number;
+    sent: number;
+    failed: number;
+    errors: Array<{ appointmentId: string; error: string }>;
+  }> {
+    try {
+      this.logger.log('Iniciando envio de lembretes de agendamentos');
+
+      const now = new Date();
+      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000); // 1 hora à frente
+      const oneHourAndFiveMinutesFromNow = new Date(
+        now.getTime() + 65 * 60 * 1000,
+      ); // 1h05min à frente (janela de 5 minutos)
+
+      // Buscar agendamentos que ocorrem em 1 hora
+      // Considerando scheduledDate + startTime
+      // Primeiro, buscar agendamentos com status válido e scheduledDate próximo
+      const appointments = await (this.prisma as any).appointment.findMany({
+        where: {
+          status: {
+            notIn: ['CANCELLED', 'COMPLETED'],
+          },
+          // Filtrar por scheduledDate para reduzir a busca
+          scheduledDate: {
+            gte: new Date(now.getTime() + 55 * 60 * 1000), // 55 minutos à frente
+            lte: new Date(now.getTime() + 70 * 60 * 1000), // 70 minutos à frente
+          },
+        },
+        include: {
+          client: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          partner: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          professional: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          notificationLogs: {
+            where: {
+              status: 'SENT',
+              channel: 'WHATSAPP',
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 1,
+          },
+        },
+      });
+
+      // Filtrar agendamentos que ocorrem exatamente em 1 hora
+      const appointmentsToNotify = appointments.filter((apt: any) => {
+        // Combinar scheduledDate com startTime
+        const scheduledDate = new Date(apt.scheduledDate);
+        const [hours, minutes] = apt.startTime.split(':');
+        scheduledDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+
+        // Verificar se está na janela de 1 hora (com margem de 5 minutos)
+        const isInWindow =
+          scheduledDate >= oneHourFromNow &&
+          scheduledDate <= oneHourAndFiveMinutesFromNow;
+
+        // Verificar se já foi enviada notificação para este agendamento
+        const alreadyNotified = apt.notificationLogs.length > 0;
+
+        return isInWindow && !alreadyNotified;
+      });
+
+      this.logger.log(
+        `Encontrados ${appointmentsToNotify.length} agendamentos para notificar`,
+      );
+
+      let sent = 0;
+      let failed = 0;
+      const errors: Array<{ appointmentId: string; error: string }> = [];
+
+      // Processar cada agendamento
+      for (const appointment of appointmentsToNotify) {
+        try {
+          // Verificar se o cliente tem telefone
+          if (!appointment.client?.phone) {
+            this.logger.warn(
+              `Cliente ${appointment.clientId} não possui telefone cadastrado`,
+            );
+            failed++;
+            errors.push({
+              appointmentId: appointment.id,
+              error: 'Cliente não possui telefone cadastrado',
+            });
+            continue;
+          }
+
+          // Montar mensagem personalizada
+          const message = this.buildReminderMessage(appointment);
+
+          // Enviar via WhatsApp
+          const result = await this.baileysService.sendWhatsAppMessage(
+            appointment.client.phone,
+            message,
+          );
+
+          // Registrar log da notificação
+          await (this.prisma as any).appointmentNotificationLog.create({
+            data: {
+              appointmentId: appointment.id,
+              clientId: appointment.client.id,
+              phoneNumber: appointment.client.phone,
+              message: message,
+              status: result.success ? 'SENT' : 'FAILED',
+              sentAt: result.success ? new Date() : null,
+              errorMessage: result.error || null,
+              channel: 'WHATSAPP',
+            },
+          });
+
+          if (result.success) {
+            sent++;
+            this.logger.log(
+              `Lembrete enviado com sucesso para agendamento ${appointment.id}`,
+            );
+          } else {
+            failed++;
+            errors.push({
+              appointmentId: appointment.id,
+              error: result.error || 'Erro desconhecido',
+            });
+            this.logger.error(
+              `Falha ao enviar lembrete para agendamento ${appointment.id}: ${result.error}`,
+            );
+          }
+        } catch (error: any) {
+          failed++;
+          const errorMessage = error.message || 'Erro desconhecido';
+          errors.push({
+            appointmentId: appointment.id,
+            error: errorMessage,
+          });
+
+          // Registrar log de erro
+          try {
+            await (this.prisma as any).appointmentNotificationLog.create({
+              data: {
+                appointmentId: appointment.id,
+                clientId: appointment.client?.id || '',
+                phoneNumber: appointment.client?.phone || '',
+                message: '',
+                status: 'FAILED',
+                sentAt: null,
+                errorMessage: errorMessage,
+                channel: 'WHATSAPP',
+              },
+            });
+          } catch (logError) {
+            this.logger.error(
+              `Erro ao registrar log de notificação: ${logError}`,
+            );
+          }
+
+          this.logger.error(
+            `Erro ao processar agendamento ${appointment.id}: ${errorMessage}`,
+            error.stack,
+          );
+        }
+      }
+
+      this.logger.log(
+        `Processamento concluído: ${sent} enviados, ${failed} falhas`,
+      );
+
+      return {
+        success: true,
+        totalFound: appointmentsToNotify.length,
+        sent,
+        failed,
+        errors,
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao enviar lembretes', error);
+      return {
+        success: false,
+        totalFound: 0,
+        sent: 0,
+        failed: 0,
+        errors: [{ appointmentId: 'system', error: error.message }],
+      };
+    }
+  }
+
+  /**
+   * Construir mensagem personalizada de lembrete
+   */
+  private buildReminderMessage(appointment: any): string {
+    const clientName = appointment.client?.name || 'Cliente';
+    const serviceName = appointment.service?.name || 'serviço';
+    const partnerName = appointment.partner?.name;
+    const professionalName = appointment.professional?.name;
+
+    let message = `Olá ${clientName}! 👋\n\n`;
+    message += `Lembrete: você tem um agendamento daqui a 1 hora.\n\n`;
+    message += `📅 Serviço: ${serviceName}\n`;
+
+    if (professionalName) {
+      message += `👨‍⚕️ Profissional: ${professionalName}\n`;
+    }
+
+    if (partnerName) {
+      message += `🤝 Parceiro: ${partnerName}\n`;
+    }
+
+    message += `⏰ Horário: ${appointment.startTime}\n\n`;
+    message += `Caso precise reprogramar, estamos à disposição.`;
+
+    return message;
   }
 }

@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ExternalIntegrationController } from './external-integration.controller';
+import { WhatsAppController } from './whatsapp.controller';
 import { ExternalIntegrationService } from './external-integration.service';
 import { PaymentIntegrationService } from './services/payment-integration.service';
 import { AccountingIntegrationService } from './services/accounting-integration.service';
 import { CrmIntegrationService } from './services/crm-integration.service';
 import { WebhookService } from './services/webhook.service';
 import { ApiIntegrationService } from './services/api-integration.service';
+import { BaileysIntegrationService } from './services/baileys-integration.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
@@ -19,7 +21,7 @@ import { HttpModule } from '@nestjs/axios';
       maxRedirects: 5,
     }),
   ],
-  controllers: [ExternalIntegrationController],
+  controllers: [ExternalIntegrationController, WhatsAppController],
   providers: [
     ExternalIntegrationService,
     PaymentIntegrationService,
@@ -27,6 +29,7 @@ import { HttpModule } from '@nestjs/axios';
     CrmIntegrationService,
     WebhookService,
     ApiIntegrationService,
+    BaileysIntegrationService,
   ],
   exports: [
     ExternalIntegrationService,
@@ -35,6 +38,7 @@ import { HttpModule } from '@nestjs/axios';
     CrmIntegrationService,
     WebhookService,
     ApiIntegrationService,
+    BaileysIntegrationService,
   ],
 })
 export class ExternalIntegrationModule {}

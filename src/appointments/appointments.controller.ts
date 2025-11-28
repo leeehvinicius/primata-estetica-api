@@ -300,4 +300,41 @@ export class AppointmentsController {
       serviceId,
     );
   }
+
+  @ApiOperation({
+    summary: 'Enviar lembretes automáticos de agendamentos',
+    description:
+      'Rota automatizada que envia notificações via WhatsApp para clientes com agendamentos em 1 hora. Esta rota é chamada automaticamente por um cron job a cada 5 minutos.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lembretes processados com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        totalFound: { type: 'number' },
+        sent: { type: 'number' },
+        failed: { type: 'number' },
+        errors: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              appointmentId: { type: 'string' },
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @Post('send-reminders')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
+  @RequirePermission('appointments', 'update')
+  @UseGuards(RolePermissionGuard)
+  sendReminders() {
+    return this.appointments.sendReminders();
+  }
 }

@@ -36,13 +36,14 @@ model User {
   serviceCategories ServiceCategory[]
 
   // Relações com agendamentos
-  appointments         Appointment[]
-  appointmentReminders AppointmentReminder[]
+  appointments                Appointment[]
+  appointmentReminders        AppointmentReminder[]
+  appointmentNotificationLogs AppointmentNotificationLog[]
 
   // Relações com pagamentos
-  payments        Payment[]
-  paymentReceipts PaymentReceipt[]
-  commissions     Commission[]
+  payments           Payment[]
+  paymentReceipts    PaymentReceipt[]
+  commissions        Commission[]
   partnerCommissions PartnerCommission[]
 
   // Relações com estoque
@@ -113,13 +114,14 @@ model Client {
   updatedAt        DateTime  @updatedAt
 
   // Relacionamentos
-  preferences    ClientPreference?
-  attendances    Attendance[]
-  medicalHistory MedicalHistory[]
-  treatments     Treatment[]
-  appointments   Appointment[]
-  payments       Payment[]
-  agreements     Agreement[] // Convênios do cliente
+  preferences      ClientPreference?
+  attendances      Attendance[]
+  medicalHistory   MedicalHistory[]
+  treatments       Treatment[]
+  appointments     Appointment[]
+  payments         Payment[]
+  agreements       Agreement[] // Convênios do cliente
+  notificationLogs AppointmentNotificationLog[]
 }
 
 model ClientPreference {
@@ -261,25 +263,25 @@ model ProfessionalService {
 
 // Módulo de Serviços
 model Service {
-  id                   String          @id @default(cuid())
+  id                   String   @id @default(cuid())
   name                 String
   description          String?
   serviceCategoryId    String
   duration             Int // Duração em minutos
-  basePrice            Decimal         @db.Decimal(10, 2)
-  currentPrice         Decimal         @db.Decimal(10, 2)
+  basePrice            Decimal  @db.Decimal(10, 2)
+  currentPrice         Decimal  @db.Decimal(10, 2)
   color                String? // Cor de destaque do serviço (hex, rgb, nome)
-  isActive             Boolean         @default(true)
-  requiresProfessional Boolean         @default(true)
-  maxConcurrentClients Int             @default(1)
+  isActive             Boolean  @default(true)
+  requiresProfessional Boolean  @default(true)
+  maxConcurrentClients Int      @default(1)
   preparationTime      Int? // Tempo de preparação em minutos
   recoveryTime         Int? // Tempo de recuperação em minutos
   contraindications    String? // Contraindicações
   benefits             String? // Benefícios do serviço
   notes                String? // Observações gerais
   createdBy            String // ID do usuário que criou
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   // Relacionamentos
   packages           ServicePackageItem[]
@@ -389,13 +391,14 @@ model Appointment {
   updatedAt          DateTime            @updatedAt
 
   // Relacionamentos
-  client       Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  professional Professional?         @relation(fields: [professionalId], references: [id])
-  service      Service               @relation(fields: [serviceId], references: [id])
-  user         User                  @relation(fields: [createdBy], references: [id])
-  partner      Partner?              @relation(fields: [partnerId], references: [id])
-  reminders    AppointmentReminder[]
-  payments     Payment[]
+  client           Client                       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  professional     Professional?                @relation(fields: [professionalId], references: [id])
+  service          Service                      @relation(fields: [serviceId], references: [id])
+  user             User                         @relation(fields: [createdBy], references: [id])
+  partner          Partner?                     @relation(fields: [partnerId], references: [id])
+  reminders        AppointmentReminder[]
+  payments         Payment[]
+  notificationLogs AppointmentNotificationLog[]
 }
 
 model AppointmentReminder {
@@ -414,6 +417,29 @@ model AppointmentReminder {
   // Relacionamentos
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   user        User        @relation(fields: [createdBy], references: [id])
+}
+
+model AppointmentNotificationLog {
+  id            String             @id @default(cuid())
+  appointmentId String
+  clientId      String
+  phoneNumber   String
+  message       String
+  status        NotificationStatus @default(PENDING)
+  sentAt        DateTime?
+  errorMessage  String?
+  channel       ReminderChannel    @default(WHATSAPP)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  // Relacionamentos
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  client      Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // Módulo de Pagamentos
@@ -443,15 +469,15 @@ model Payment {
   updatedAt         DateTime      @updatedAt
 
   // Relacionamentos
-  client            Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  appointment       Appointment?            @relation(fields: [appointmentId], references: [id])
-  service           Service                 @relation(fields: [serviceId], references: [id])
-  user              User                    @relation(fields: [createdBy], references: [id])
-  receipts          PaymentReceipt[]
-  commissions       Commission[]
+  client             Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointment        Appointment?            @relation(fields: [appointmentId], references: [id])
+  service            Service                 @relation(fields: [serviceId], references: [id])
+  user               User                    @relation(fields: [createdBy], references: [id])
+  receipts           PaymentReceipt[]
+  commissions        Commission[]
   partnerCommissions PartnerCommission[]
-  transactionLogs   PaymentTransactionLog[]
-  agreementPayments AgreementPayment[] // Pagamentos com convênios
+  transactionLogs    PaymentTransactionLog[]
+  agreementPayments  AgreementPayment[] // Pagamentos com convênios
 }
 
 model PaymentReceipt {
@@ -491,18 +517,18 @@ model Commission {
 }
 
 model PartnerCommission {
-  id             String           @id @default(cuid())
-  paymentId      String
-  partnerId      String
-  amount         Decimal          @db.Decimal(10, 2) // Valor devido ao parceiro (ex: 5% de 300 = 15)
-  percentage     Decimal          @db.Decimal(5, 2) // Percentual de desconto do parceiro aplicado
-  baseAmount     Decimal          @db.Decimal(10, 2) // Valor base sobre o qual foi calculado
-  status         CommissionStatus @default(PENDING)
-  paidAt         DateTime?
-  notes          String? // Observações da comissão
-  createdBy      String // ID do usuário que criou
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id         String           @id @default(cuid())
+  paymentId  String
+  partnerId  String
+  amount     Decimal          @db.Decimal(10, 2) // Valor devido ao parceiro (ex: 5% de 300 = 15)
+  percentage Decimal          @db.Decimal(5, 2) // Percentual de desconto do parceiro aplicado
+  baseAmount Decimal          @db.Decimal(10, 2) // Valor base sobre o qual foi calculado
+  status     CommissionStatus @default(PENDING)
+  paidAt     DateTime?
+  notes      String? // Observações da comissão
+  createdBy  String // ID do usuário que criou
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   // Relacionamentos
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
@@ -721,7 +747,7 @@ model ServiceCategory {
 
   // Relacionamentos
   services Service[]
-  user     User     @relation(fields: [createdBy], references: [id])
+  user     User      @relation(fields: [createdBy], references: [id])
 }
 
 enum DiscountType {
@@ -738,21 +764,21 @@ enum DocumentType {
 }
 
 model Partner {
-  id              String   @id @default(cuid())
+  id              String       @id @default(cuid())
   name            String
   documentType    DocumentType
-  document        String   @unique
-  partnerDiscount Decimal  @db.Decimal(5, 2)
-  clientDiscount  Decimal  @db.Decimal(5, 2)
-  fixedDiscount   Decimal? @db.Decimal(10, 2)
+  document        String       @unique
+  partnerDiscount Decimal      @db.Decimal(5, 2)
+  clientDiscount  Decimal      @db.Decimal(5, 2)
+  fixedDiscount   Decimal?     @db.Decimal(10, 2)
   notes           String?
-  isActive        Boolean  @default(true)
+  isActive        Boolean      @default(true)
   createdBy       String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  user User @relation(fields: [createdBy], references: [id])
-  appointments Appointment[]
+  user               User                @relation(fields: [createdBy], references: [id])
+  appointments       Appointment[]
   partnerCommissions PartnerCommission[]
 }
 
@@ -817,6 +843,13 @@ enum ReminderChannel {
   WHATSAPP // WhatsApp
   PUSH // Push notification
   CALL // Ligação
+}
+
+enum NotificationStatus {
+  PENDING // Pendente
+  SENT // Enviado
+  FAILED // Falhou
+  CANCELLED // Cancelado
 }
 
 enum PaymentMethod {
