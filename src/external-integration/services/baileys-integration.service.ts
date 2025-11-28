@@ -52,9 +52,17 @@ export class BaileysIntegrationService implements OnModuleDestroy {
     }
 
     if (this.isConnecting) {
+      // Se já está conectando, retornar QR Code se disponível
+      if (this.qrCode) {
+        return {
+          status: 'qr_code_ready',
+          message: 'Conexão em andamento. Escaneie o QR Code.',
+          qrCode: this.qrCode,
+        };
+      }
       return {
         status: 'connecting',
-        message: 'Conexão já em andamento',
+        message: 'Conexão já em andamento. Aguarde ou desconecte primeiro.',
       };
     }
 
@@ -95,15 +103,48 @@ export class BaileysIntegrationService implements OnModuleDestroy {
       // Evento de atualização de credenciais
       this.socket.ev.on('creds.update', saveCreds);
 
+      // Aguardar QR Code se necessário (timeout de 15 segundos)
+      let qrCodePromise: Promise<string | null> | null = null;
+      
+      if (!hasCredentials) {
+        qrCodePromise = new Promise<string | null>((resolve) => {
+          const timeout = setTimeout(() => {
+            this.logger.warn('Timeout aguardando QR Code');
+            resolve(null);
+          }, 15000); // 15 segundos para gerar QR Code
+
+          const handler = async (update: any) => {
+            if (update.qr) {
+              clearTimeout(timeout);
+              this.socket?.ev.off('connection.update', handler);
+              try {
+                const qrCode = await toDataURL(update.qr);
+                this.logger.log(`QR Code gerado com sucesso (${qrCode.substring(0, 50)}...)`);
+                this.qrCode = qrCode;
+                this.notifyStatusChange('qr_code_ready');
+                resolve(qrCode);
+              } catch (error) {
+                this.logger.error('Erro ao gerar QR Code na promise', error);
+                resolve(null);
+              }
+            }
+          };
+
+          this.socket.ev.on('connection.update', handler);
+        });
+      }
+
       // Evento de mudança de conexão
       this.socket.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr) {
-          this.logger.log('QR Code gerado!');
+        // Se QR Code já foi processado pela promise, não processar novamente
+        if (qr && !this.qrCode) {
+          this.logger.log('QR Code gerado no evento!');
           // Gerar QR Code em base64
           try {
             this.qrCode = await toDataURL(qr);
+            this.logger.log(`QR Code gerado com sucesso (${this.qrCode.substring(0, 50)}...)`);
             this.notifyStatusChange('qr_code_ready');
           } catch (error) {
             this.logger.error('Erro ao gerar QR Code', error);
@@ -142,19 +183,26 @@ export class BaileysIntegrationService implements OnModuleDestroy {
         }
       });
 
-      // Se não tem credenciais, retornar QR Code
-      if (!hasCredentials && this.qrCode) {
-        return {
-          qrCode: this.qrCode,
-          status: 'qr_code_ready',
-          message: 'Escaneie o QR Code com o WhatsApp',
-        };
+      // Se não tem credenciais, aguardar QR Code
+      if (!hasCredentials && qrCodePromise) {
+        const qrCode = await qrCodePromise;
+        if (qrCode) {
+          this.qrCode = qrCode;
+          return {
+            qrCode: qrCode,
+            status: 'qr_code_ready',
+            message: 'Escaneie o QR Code com o WhatsApp',
+          };
+        }
       }
 
       // Se tem credenciais, aguardar conexão
+      // Ou se QR Code ainda não foi gerado, retornar status de conexão
       return {
         status: 'connecting',
-        message: 'Conectando ao WhatsApp...',
+        message: hasCredentials 
+          ? 'Conectando ao WhatsApp...' 
+          : 'Aguardando geração do QR Code...',
       };
     } catch (error: any) {
       this.logger.error(`Erro ao conectar ao WhatsApp: ${error.message}`, error.stack);
@@ -170,14 +218,22 @@ export class BaileysIntegrationService implements OnModuleDestroy {
    * Desconectar do WhatsApp
    */
   async disconnect(): Promise<void> {
+    this.logger.log('Desconectando do WhatsApp...');
+    this.isConnecting = false;
+    
     if (this.socket) {
-      this.logger.log('Desconectando do WhatsApp...');
-      await this.socket.end(undefined);
+      try {
+        await this.socket.end(undefined);
+      } catch (error) {
+        this.logger.warn('Erro ao finalizar socket:', error);
+      }
       this.socket = null;
-      this.connectionStatus = 'disconnected';
-      this.qrCode = null;
-      this.notifyStatusChange('disconnected');
     }
+    
+    this.connectionStatus = 'disconnected';
+    this.qrCode = null;
+    this.reconnectAttempts = 0;
+    this.notifyStatusChange('disconnected');
   }
 
   /**
