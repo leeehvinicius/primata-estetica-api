@@ -85,7 +85,14 @@ export class ServicesService {
       where: { id: serviceCategoryId },
     });
     if (!category) {
-      throw new NotFoundException('Categoria de serviço não encontrada');
+      throw new NotFoundException(
+        `Categoria de serviço com ID "${serviceCategoryId}" não encontrada. Verifique se o ID está correto ou se a categoria existe.`
+      );
+    }
+    if (!category.isActive) {
+      throw new BadRequestException(
+        `Categoria de serviço com ID "${serviceCategoryId}" está inativa`
+      );
     }
 
     const serviceData: any = {
