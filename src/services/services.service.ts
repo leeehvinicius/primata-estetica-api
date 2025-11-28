@@ -45,26 +45,38 @@ export class ServicesService {
     // Validar e obter categoria
     let serviceCategoryId: string;
     
+    // Prioridade: serviceCategoryId > categoryId > category (como ID ou nome)
     if (dto.serviceCategoryId) {
       // Se serviceCategoryId foi fornecido, usar diretamente
       serviceCategoryId = dto.serviceCategoryId;
+    } else if (dto.categoryId) {
+      // Se categoryId foi fornecido, usar diretamente
+      serviceCategoryId = dto.categoryId;
     } else if (dto.category) {
-      // Se category (nome) foi fornecido, buscar pelo nome
-      const categoryByName = await (this.prisma as any).serviceCategory.findFirst({
-        where: { 
-          name: { equals: dto.category, mode: 'insensitive' },
-          isActive: true
-        },
-      });
-      if (!categoryByName) {
-        throw new NotFoundException(
-          `Categoria de serviço com nome "${dto.category}" não encontrada`
-        );
+      // Verificar se category parece ser um ID (CUID geralmente começa com 'c' e tem ~25 caracteres)
+      const looksLikeId = /^c[a-z0-9]{24}$/i.test(dto.category);
+      
+      if (looksLikeId) {
+        // Se parece um ID, tentar buscar diretamente pelo ID
+        serviceCategoryId = dto.category;
+      } else {
+        // Se não parece um ID, buscar pelo nome
+        const categoryByName = await (this.prisma as any).serviceCategory.findFirst({
+          where: { 
+            name: { equals: dto.category, mode: 'insensitive' },
+            isActive: true
+          },
+        });
+        if (!categoryByName) {
+          throw new NotFoundException(
+            `Categoria de serviço com nome "${dto.category}" não encontrada`
+          );
+        }
+        serviceCategoryId = categoryByName.id;
       }
-      serviceCategoryId = categoryByName.id;
     } else {
       throw new BadRequestException(
-        'É necessário fornecer serviceCategoryId ou category'
+        'É necessário fornecer serviceCategoryId, categoryId ou category'
       );
     }
 
