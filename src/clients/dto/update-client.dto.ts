@@ -7,7 +7,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Gender } from '@prisma/client';
+import { Gender, FormalTitle } from '@prisma/client';
 
 export class UpdateClientDto {
   @ApiProperty({ description: 'Nome completo do cliente', required: false })
@@ -34,6 +34,23 @@ export class UpdateClientDto {
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  @ApiProperty({
+    description: 'Tratamento formal/pronome de cortesia',
+    enum: FormalTitle,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(FormalTitle)
+  formalTitle?: FormalTitle;
+
+  @ApiProperty({
+    description: 'Campo livre para tratamento formal quando "Outros"',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  formalTitleOther?: string;
 
   @ApiProperty({ description: 'CPF do cliente', required: false })
   @IsOptional()

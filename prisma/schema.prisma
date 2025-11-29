@@ -38,7 +38,6 @@ model User {
   // Relações com agendamentos
   appointments                Appointment[]
   appointmentReminders        AppointmentReminder[]
-  appointmentNotificationLogs AppointmentNotificationLog[]
 
   // Relações com pagamentos
   payments           Payment[]
@@ -92,13 +91,15 @@ model Profile {
 
 // Módulo de Clientes
 model Client {
-  id               String    @id @default(cuid())
+  id               String       @id @default(cuid())
   name             String
-  email            String?   @unique
+  email            String?      @unique
   phone            String
   birthDate        DateTime?
   gender           Gender?
-  document         String?   @unique // CPF
+  formalTitle      FormalTitle? // Tratamento formal/pronome de cortesia
+  formalTitleOther String?      // Campo livre para "Outros"
+  document         String?      @unique // CPF
   address          String?
   city             String?
   state            String?
@@ -107,11 +108,11 @@ model Client {
   emergencyPhone   String?
   notes            String? // Observações gerais
   lastCrmSync      DateTime? // Última sincronização com CRM
-  termsAccepted    Boolean   @default(false) // Se o paciente aceitou os termos de uso
+  termsAccepted    Boolean      @default(false) // Se o paciente aceitou os termos de uso
   termsAcceptedAt  DateTime? // Data/hora em que os termos foram aceitos
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   // Relacionamentos
   preferences      ClientPreference?
@@ -669,6 +670,16 @@ enum Gender {
   FEMALE
   OTHER
   PREFER_NOT_TO_SAY
+}
+
+enum FormalTitle {
+  SR    // Sr.
+  SRA   // Sra.
+  DR    // Dr.
+  DRA   // Dra.
+  PROF  // Prof.
+  PROFA // Profa.
+  OTHER // Outros
 }
 
 enum SkinType {

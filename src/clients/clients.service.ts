@@ -43,6 +43,8 @@ export class ClientsService {
     if (dto.email) clientData.email = dto.email;
     if (dto.birthDate) clientData.birthDate = new Date(dto.birthDate);
     if (dto.gender) clientData.gender = dto.gender;
+    if (dto.formalTitle) clientData.formalTitle = dto.formalTitle;
+    if (dto.formalTitleOther) clientData.formalTitleOther = dto.formalTitleOther;
     if (dto.document) clientData.document = dto.document;
     if (dto.address) clientData.address = dto.address;
     if (dto.city) clientData.city = dto.city;
@@ -206,6 +208,9 @@ export class ClientsService {
     if (dto.birthDate !== undefined)
       updateData.birthDate = dto.birthDate ? new Date(dto.birthDate) : null;
     if (dto.gender !== undefined) updateData.gender = dto.gender;
+    if (dto.formalTitle !== undefined) updateData.formalTitle = dto.formalTitle;
+    if (dto.formalTitleOther !== undefined)
+      updateData.formalTitleOther = dto.formalTitleOther;
     if (dto.document !== undefined) updateData.document = dto.document;
     if (dto.address !== undefined) updateData.address = dto.address;
     if (dto.city !== undefined) updateData.city = dto.city;

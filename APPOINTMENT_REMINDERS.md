@@ -1,5 +1,11 @@
 # Sistema de Lembretes Automáticos de Agendamentos
 
+## 🌐 URL Base da API
+
+**Base URL:** `https://api.consutorio.revittahcare.com.br`
+
+Todos os endpoints abaixo devem ser prefixados com esta URL base.
+
 ## 📋 Descrição
 
 Sistema automatizado que envia lembretes via WhatsApp para clientes que possuem agendamentos previstos para iniciar **daqui a 1 hora**.
@@ -18,7 +24,7 @@ O sistema possui endpoints para configurar e gerenciar a conexão com o WhatsApp
 
 #### 1. Conectar ao WhatsApp
 
-**POST** `/api/whatsapp/connect`
+**POST** `https://api.consutorio.revittahcare.com.br/api/whatsapp/connect`
 
 Inicia a conexão com o WhatsApp. Se não houver credenciais salvas, retorna um QR Code.
 
@@ -34,7 +40,7 @@ Inicia a conexão com o WhatsApp. Se não houver credenciais salvas, retorna um 
 
 #### 2. Verificar Status
 
-**GET** `/api/whatsapp/status`
+**GET** `https://api.consutorio.revittahcare.com.br/api/whatsapp/status`
 
 Verifica o status atual da conexão.
 
@@ -50,27 +56,27 @@ Verifica o status atual da conexão.
 
 #### 3. Obter QR Code
 
-**GET** `/api/whatsapp/qr-code`
+**GET** `https://api.consutorio.revittahcare.com.br/api/whatsapp/qr-code`
 
 Retorna o QR Code atual se disponível. Use este endpoint para atualizar o QR Code na interface.
 
 #### 4. Desconectar
 
-**DELETE** `/api/whatsapp/disconnect`
+**DELETE** `https://api.consutorio.revittahcare.com.br/api/whatsapp/disconnect`
 
 Desconecta do WhatsApp mantendo as credenciais salvas.
 
 #### 5. Limpar Autenticação
 
-**DELETE** `/api/whatsapp/clear-auth`
+**DELETE** `https://api.consutorio.revittahcare.com.br/api/whatsapp/clear-auth`
 
 Remove as credenciais salvas e força a geração de um novo QR Code. Use para conectar com outra conta.
 
 ### Fluxo de Conexão
 
-1. Chame `POST /api/whatsapp/connect`
+1. Chame `POST https://api.consutorio.revittahcare.com.br/api/whatsapp/connect`
 2. Se retornar `qrCode`, exiba na interface e peça para o usuário escanear
-3. Monitore o status com `GET /api/whatsapp/status` até conectar
+3. Monitore o status com `GET https://api.consutorio.revittahcare.com.br/api/whatsapp/status` até conectar
 4. Após conectar, as credenciais são salvas automaticamente na pasta `.wabauth`
 
 ### Migração do Banco de Dados
@@ -85,7 +91,7 @@ npx prisma migrate dev
 
 ### Rota Automatizada
 
-**POST** `/api/appointments/send-reminders`
+**POST** `https://api.consutorio.revittahcare.com.br/api/appointments/send-reminders`
 
 Esta rota é chamada automaticamente por um **cron job a cada 5 minutos**.
 
@@ -150,7 +156,7 @@ Todos os envios são registrados na tabela `AppointmentNotificationLog` com:
 Para testar manualmente, você pode chamar a rota:
 
 ```bash
-curl -X POST http://localhost:3000/api/appointments/send-reminders \
+curl -X POST https://api.consutorio.revittahcare.com.br/api/appointments/send-reminders \
   -H "Authorization: Bearer SEU_TOKEN"
 ```
 
@@ -186,25 +192,25 @@ CREATE TABLE "AppointmentNotificationLog" (
 
 ### Erro: "Não conectado ao WhatsApp"
 
-1. Chame o endpoint `POST /api/whatsapp/connect` para iniciar a conexão
+1. Chame o endpoint `POST https://api.consutorio.revittahcare.com.br/api/whatsapp/connect` para iniciar a conexão
 2. Se retornar um QR Code, escaneie com o WhatsApp
-3. Monitore o status com `GET /api/whatsapp/status`
-4. Se a conexão foi perdida, chame `POST /api/whatsapp/connect` novamente
+3. Monitore o status com `GET https://api.consutorio.revittahcare.com.br/api/whatsapp/status`
+4. Se a conexão foi perdida, chame `POST https://api.consutorio.revittahcare.com.br/api/whatsapp/connect` novamente
 5. As credenciais são salvas automaticamente na pasta `.wabauth`
 
 ### Exemplo de Uso
 
 ```bash
 # 1. Conectar
-curl -X POST http://localhost:3000/api/whatsapp/connect \
+curl -X POST https://api.consutorio.revittahcare.com.br/api/whatsapp/connect \
   -H "Authorization: Bearer SEU_TOKEN"
 
 # 2. Verificar status
-curl -X GET http://localhost:3000/api/whatsapp/status \
+curl -X GET https://api.consutorio.revittahcare.com.br/api/whatsapp/status \
   -H "Authorization: Bearer SEU_TOKEN"
 
 # 3. Obter QR Code (se necessário)
-curl -X GET http://localhost:3000/api/whatsapp/qr-code \
+curl -X GET https://api.consutorio.revittahcare.com.br/api/whatsapp/qr-code \
   -H "Authorization: Bearer SEU_TOKEN"
 ```
 

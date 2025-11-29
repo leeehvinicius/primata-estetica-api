@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Gender } from '@prisma/client';
+import { Gender, FormalTitle } from '@prisma/client';
 
 export class ClientResponseDto {
   @ApiProperty()
@@ -19,6 +19,12 @@ export class ClientResponseDto {
 
   @ApiProperty({ enum: Gender, required: false })
   gender?: Gender;
+
+  @ApiProperty({ enum: FormalTitle, required: false })
+  formalTitle?: FormalTitle;
+
+  @ApiProperty({ required: false })
+  formalTitleOther?: string;
 
   @ApiProperty({ required: false })
   document?: string;
