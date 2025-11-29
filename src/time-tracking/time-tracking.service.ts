@@ -68,6 +68,14 @@ export class TimeTrackingService {
       throw new BadRequestException('Já existe um registro recente deste tipo');
     }
 
+    // Validar horário de registro considerando atendimentos
+    const currentTime = new Date();
+    await this.validateWorkingHoursWithAppointments(
+      currentTime,
+      user.id,
+      user.email,
+    );
+
     // Validar localização se fornecida
     if (registerDto.location) {
       await this.validateLocation(registerDto.location, user.id);
@@ -488,6 +496,111 @@ export class TimeTrackingService {
         throw new BadRequestException('Localização fora dos locais permitidos');
       }
     }
+  }
+
+  /**
+   * Valida o horário de registro considerando atendimentos agendados
+   * Se não houver atendimento registrado, compara com horário padrão
+   * Se houver atendimento agendado até 20:00, permite registro e contabiliza hora extra
+   */
+  private async validateWorkingHoursWithAppointments(
+    timestamp: Date,
+    userId: string,
+    userEmail: string,
+  ): Promise<void> {
+    // Buscar configurações do usuário para obter horário padrão
+    const settings = await this.prisma.timeTrackingSettings.findUnique({
+      where: { userId },
+    });
+
+    // Definir horário padrão (padrão: 08:00 às 18:00)
+    const defaultStartTime = '08:00';
+    const defaultEndTime = '18:00';
+    const workingHours = settings?.workingHours as any;
+    const standardStartTime = workingHours?.startTime || defaultStartTime;
+    const standardEndTime = workingHours?.endTime || defaultEndTime;
+
+    // Obter data atual (apenas data, sem hora)
+    const currentDate = new Date(timestamp);
+    currentDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(currentDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // Buscar profissional associado ao usuário (se existir)
+    const professional = await this.prisma.professional.findFirst({
+      where: {
+        email: userEmail,
+        isActive: true,
+      },
+    });
+
+    // Buscar atendimentos do dia atual onde o usuário está envolvido
+    // 1. Atendimentos onde o usuário é o profissional
+    // 2. Atendimentos criados pelo usuário
+    const orConditions: any[] = [];
+
+    if (professional) {
+      orConditions.push({
+        professionalId: professional.id,
+      });
+    }
+
+    orConditions.push({
+      createdBy: userId,
+    });
+
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        OR: orConditions,
+        scheduledDate: {
+          gte: currentDate,
+          lt: nextDay,
+        },
+        status: {
+          in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'],
+        },
+      },
+    });
+
+    // Se não houver atendimento registrado, comparar com horário padrão
+    if (appointments.length === 0) {
+      const currentHour = timestamp.getHours();
+      const currentMinute = timestamp.getMinutes();
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+      const [startHour, startMin] = standardStartTime.split(':').map(Number);
+      const startTimeInMinutes = startHour * 60 + startMin;
+
+      // Se estiver antes do horário padrão de início, lançar exceção
+      if (currentTimeInMinutes < startTimeInMinutes) {
+        throw new BadRequestException(
+          `Registro de ponto antes do horário padrão de atendimento (${standardStartTime})`,
+        );
+      }
+
+      // Permitir registro se estiver dentro ou após o horário padrão
+      // Horas extras serão calculadas posteriormente no cálculo de horas trabalhadas
+      // se o registro for após o horário padrão de término
+      return;
+    }
+
+    // Se houver atendimento agendado, verificar se algum é até 20:00
+    const hasAppointmentUntil20 = appointments.some((appointment) => {
+      const [endHour, endMin] = appointment.endTime.split(':').map(Number);
+      const appointmentEndTimeInMinutes = endHour * 60 + endMin;
+      const limit20InMinutes = 20 * 60; // 20:00 em minutos
+
+      return appointmentEndTimeInMinutes <= limit20InMinutes;
+    });
+
+    if (hasAppointmentUntil20) {
+      // Se houver atendimento até 20:00, considerar horário válido
+      // O registro será permitido e a hora extra será contabilizada no cálculo
+      return;
+    }
+
+    // Se houver atendimento após 20:00, ainda permitir mas será tratado como hora extra
+    // A validação básica já foi feita, então permitimos o registro
   }
 
   private calculateWorkingHours(timeTrackings: TimeTracking[]): {
