@@ -545,7 +545,7 @@ export class AppointmentsService {
     if (dto.cancellationReason !== undefined)
       updateData.cancellationReason = dto.cancellationReason;
 
-    // Se mudou data/hora, recalcular horário de fim
+    // Se mudou data/hora, recalcular horário de fim e verificar disponibilidade
     if (dto.scheduledDate || dto.startTime || dto.serviceId) {
       const service = dto.serviceId
         ? await (this.prisma as any).service.findUnique({
@@ -555,12 +555,44 @@ export class AppointmentsService {
             where: { id: existingAppointment.serviceId },
           });
 
-      const startTime = new Date(
-        `2000-01-01T${dto.startTime || existingAppointment.startTime}:00`,
-      );
+      const newScheduledDate = dto.scheduledDate || existingAppointment.scheduledDate;
+      const newStartTime = dto.startTime || existingAppointment.startTime;
+      const finalServiceId = dto.serviceId || existingAppointment.serviceId;
+
+      const startTime = new Date(`2000-01-01T${newStartTime}:00`);
       const endTime = new Date(startTime.getTime() + service.duration * 60000);
-      updateData.endTime = endTime.toTimeString().slice(0, 5);
+      const endTimeString = endTime.toTimeString().slice(0, 5);
+      updateData.endTime = endTimeString;
       updateData.duration = service.duration;
+
+      // Verificar disponibilidade se mudou data/hora
+      if (dto.scheduledDate || dto.startTime) {
+        // Converter scheduledDate para string no formato YYYY-MM-DD
+        let scheduledDateStr: string;
+        if (dto.scheduledDate) {
+          // dto.scheduledDate é sempre uma string (formato YYYY-MM-DD)
+          scheduledDateStr = dto.scheduledDate;
+        } else {
+          // Se não mudou a data, usar a data existente do banco
+          const existingDate = existingAppointment.scheduledDate instanceof Date
+            ? existingAppointment.scheduledDate
+            : new Date(existingAppointment.scheduledDate);
+          scheduledDateStr = existingDate.toISOString().split('T')[0];
+        }
+
+        const isAvailable = await this.checkAvailability(
+          scheduledDateStr,
+          newStartTime,
+          endTimeString,
+          dto.professionalId || existingAppointment.professionalId,
+          finalServiceId,
+          id, // Excluir o próprio agendamento da verificação
+        );
+
+        if (!isAvailable) {
+          throw new ConflictException('Horário não disponível');
+        }
+      }
     }
 
     return (this.prisma as any).appointment.update({
@@ -782,8 +814,29 @@ export class AppointmentsService {
     serviceId?: string,
     excludeAppointmentId?: string,
   ) {
-    const scheduledDate = new Date(date);
-    const dayOfWeek = this.getDayOfWeek(scheduledDate);
+    // Converter a data para o formato correto (YYYY-MM-DD para comparação)
+    // Garantir que a data seja tratada como início do dia para comparação correta
+    const dateObj = new Date(date + 'T00:00:00');
+    const scheduledDateStart = new Date(
+      dateObj.getFullYear(),
+      dateObj.getMonth(),
+      dateObj.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    const scheduledDateEnd = new Date(
+      dateObj.getFullYear(),
+      dateObj.getMonth(),
+      dateObj.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
+
+    const dayOfWeek = this.getDayOfWeek(dateObj);
 
     // Verificar se o profissional está disponível neste dia
     if (professionalId) {
@@ -810,12 +863,26 @@ export class AppointmentsService {
       }
     }
 
+    // Buscar o serviço atual se serviceId foi fornecido
+    let currentService: any = null;
+    if (serviceId) {
+      currentService = await (this.prisma as any).service.findUnique({
+        where: { id: serviceId },
+        include: {
+          category: true,
+        },
+      });
+    }
+
     // Verificar conflitos de horário
     const conflictingAppointments = await (
       this.prisma as any
     ).appointment.findMany({
       where: {
-        scheduledDate,
+        scheduledDate: {
+          gte: scheduledDateStart,
+          lte: scheduledDateEnd,
+        },
         status: {
           notIn: ['CANCELLED', 'NO_SHOW'],
         },
@@ -828,12 +895,104 @@ export class AppointmentsService {
         ...(professionalId && { professionalId }),
         ...(excludeAppointmentId && { id: { not: excludeAppointmentId } }),
       },
+      include: {
+        service: {
+          include: {
+            category: true,
+          },
+        },
+      },
     });
 
-    // permite até 30 agendamentos no mesmo horário
-    const MAX_APPOINTMENTS_PER_SLOT = 30;
+    // Log para debug (pode ser removido depois)
+    this.logger.debug(
+      `Verificando disponibilidade: date=${date}, startTime=${startTime}, endTime=${endTime}, professionalId=${professionalId}, serviceId=${serviceId}, conflitos encontrados=${conflictingAppointments.length}`,
+    );
 
-    return conflictingAppointments.length < MAX_APPOINTMENTS_PER_SLOT;
+    // Se não há conflitos, está disponível
+    if (conflictingAppointments.length === 0) {
+      return true;
+    }
+
+    // Se não temos o serviço atual, não podemos aplicar as regras de negócio
+    // Neste caso, manter comportamento conservador (permitir apenas se não houver conflitos)
+    if (!currentService) {
+      this.logger.debug(
+        `Serviço não encontrado para serviceId=${serviceId}, bloqueando agendamento`,
+      );
+      return false;
+    }
+
+    // Verificar se o serviço atual é injetável
+    const isCurrentServiceInjectable = this.isInjectableService(currentService);
+
+    // Para serviços injetáveis: permitir até 2 agendamentos simultâneos no mesmo horário
+    if (isCurrentServiceInjectable) {
+      const injectableAppointments = conflictingAppointments.filter((apt: any) =>
+        this.isInjectableService(apt.service),
+      );
+      const canSchedule = injectableAppointments.length < 2;
+      this.logger.debug(
+        `Serviço injetável: agendamentos injetáveis conflitantes=${injectableAppointments.length}, pode agendar=${canSchedule}`,
+      );
+      return canSchedule;
+    }
+
+    // Para outros serviços: permitir se forem serviços diferentes
+    // Verificar se todos os agendamentos conflitantes são de serviços diferentes
+    const hasSameService = conflictingAppointments.some(
+      (apt: any) => apt.serviceId === serviceId,
+    );
+
+    // Se há algum agendamento com o mesmo serviço, não permitir
+    if (hasSameService) {
+      this.logger.debug(
+        `Encontrado agendamento com mesmo serviço (serviceId=${serviceId}), bloqueando`,
+      );
+      return false;
+    }
+
+    // Se todos os agendamentos são de serviços diferentes, permitir
+    this.logger.debug(
+      `Todos os agendamentos conflitantes são de serviços diferentes, permitindo agendamento`,
+    );
+    return true;
+  }
+
+  /**
+   * Verifica se um serviço é injetável baseado no nome ou categoria
+   */
+  private isInjectableService(service: any): boolean {
+    if (!service) return false;
+
+    const serviceName = (service.name || '').toLowerCase();
+    const categoryName = (service.category?.name || '').toLowerCase();
+
+    // Verificar pelo nome do serviço
+    const injectableKeywords = [
+      'injetável',
+      'injeção',
+      'injectable',
+      'injection',
+      'aplicação',
+      'aplicar',
+    ];
+
+    const hasInjectableKeyword = injectableKeywords.some((keyword) =>
+      serviceName.includes(keyword),
+    );
+
+    if (hasInjectableKeyword) {
+      return true;
+    }
+
+    // Verificar pela categoria (se houver uma categoria específica para injetáveis)
+    // Por enquanto, não há categoria específica, mas podemos adicionar no futuro
+    // if (categoryName.includes('injetável') || categoryName.includes('injeção')) {
+    //   return true;
+    // }
+
+    return false;
   }
 
   async getAvailableSlots(
