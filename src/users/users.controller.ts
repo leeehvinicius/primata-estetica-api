@@ -15,6 +15,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ListUsersDto } from './dto/list-users.dto';
 import {
   UserResponseDto,
@@ -189,6 +190,33 @@ export class UsersController {
   @RequirePermission('users', 'update')
   toggleStatus(@Param('id') id: string, @GetUser('profile') profile: any) {
     return this.users.toggleUserStatus(id, profile.role);
+  }
+
+  @ApiOperation({ summary: 'Resetar senha de um usuário' })
+  @ApiResponse({
+    status: 200,
+    description: 'Senha resetada com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiBearerAuth()
+  @Patch(':id/reset-password')
+  @UseGuards(RolesGuard, RolePermissionGuard)
+  @Roles(Role.ADMINISTRADOR)
+  @RequirePermission('users', 'update')
+  resetPassword(
+    @Param('id') id: string,
+    @Body() dto: ResetPasswordDto,
+    @GetUser('profile') profile: any,
+  ) {
+    return this.users.resetPassword(id, dto.newPassword, profile.role);
   }
 
   @ApiOperation({ summary: 'Estatísticas dos usuários' })

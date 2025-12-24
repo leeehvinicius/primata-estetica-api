@@ -217,6 +217,13 @@ export class UsersService {
 
     if (dto.name) userData.name = dto.name;
     if (dto.email) userData.email = dto.email;
+    
+    // Atualizar senha se fornecida
+    if (dto.password) {
+      const hashedPassword = await this.hash.hash(dto.password);
+      userData.passwordHash = hashedPassword;
+    }
+    
     if (dto.role) profileData.role = dto.role;
     if (dto.phone !== undefined) profileData.phone = dto.phone;
     if (dto.document !== undefined) profileData.document = dto.document;
@@ -400,6 +407,42 @@ export class UsersService {
         updatedAt: true,
       },
     });
+  }
+
+  async resetPassword(id: string, newPassword: string, currentUserRole: Role) {
+    // Verificar se o usuário existe
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    // Apenas administradores podem resetar senhas de outros usuários
+    if (currentUserRole !== 'ADMINISTRADOR') {
+      throw new ForbiddenException(
+        'Apenas administradores podem resetar senhas de usuários',
+      );
+    }
+
+    // Gerar hash da nova senha
+    const hashedPassword = await this.hash.hash(newPassword);
+
+    // Atualizar senha
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        passwordHash: hashedPassword,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Senha resetada com sucesso',
+    };
   }
 
   async getRoleInfo(role: Role) {
