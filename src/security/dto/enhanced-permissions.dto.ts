@@ -422,6 +422,57 @@ export const ENHANCED_ROLE_PERMISSIONS: Record<Role, EnhancedPermission[]> = {
       conditions: ['cleaning_products_only'],
     },
   ],
+
+  TECNICO: [
+    // Técnico - Suporte em procedimentos
+    {
+      resource: SecurityResource.CLIENTS,
+      actions: [SecurityAction.READ, SecurityAction.UPDATE],
+      scope: PermissionScope.ASSIGNED,
+      dataClassification: DataClassification.CONFIDENTIAL,
+    },
+    {
+      resource: SecurityResource.APPOINTMENTS,
+      actions: [SecurityAction.READ, SecurityAction.UPDATE],
+      scope: PermissionScope.ASSIGNED,
+      dataClassification: DataClassification.INTERNAL,
+    },
+    {
+      resource: SecurityResource.PRODUCTS,
+      actions: [SecurityAction.READ],
+      scope: PermissionScope.DEPARTMENT,
+      dataClassification: DataClassification.INTERNAL,
+    },
+    {
+      resource: SecurityResource.DASHBOARD,
+      actions: [SecurityAction.READ],
+      scope: PermissionScope.DEPARTMENT,
+      dataClassification: DataClassification.INTERNAL,
+    },
+  ],
+
+  ESTAGIARIO: [
+    // Estagiário - Apenas leitura para aprendizado
+    {
+      resource: SecurityResource.CLIENTS,
+      actions: [SecurityAction.READ],
+      scope: PermissionScope.LIMITED,
+      dataClassification: DataClassification.INTERNAL,
+      conditions: ['supervised_access'],
+    },
+    {
+      resource: SecurityResource.APPOINTMENTS,
+      actions: [SecurityAction.READ],
+      scope: PermissionScope.LIMITED,
+      dataClassification: DataClassification.INTERNAL,
+    },
+    {
+      resource: SecurityResource.DASHBOARD,
+      actions: [SecurityAction.READ],
+      scope: PermissionScope.LIMITED,
+      dataClassification: DataClassification.INTERNAL,
+    },
+  ],
 };
 
 export class PermissionCheckDto {

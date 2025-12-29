@@ -313,6 +313,8 @@ export class UsersService {
       RECEPCIONISTA: 0,
       TÉCNICO_DE_ENFERMAGEM: 0,
       SERVICOS_GERAIS: 0,
+      TECNICO: 0,
+      ESTAGIARIO: 0,
     };
 
     byRole.forEach((stat) => {

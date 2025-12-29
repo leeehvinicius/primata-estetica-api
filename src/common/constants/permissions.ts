@@ -210,6 +210,28 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'maintenance', actions: ['create', 'read', 'update'] },
     { resource: 'cleaning_schedule', actions: ['read', 'update'] },
   ],
+  TECNICO: [
+    { resource: 'patients', actions: ['read', 'update'] },
+    { resource: 'appointments', actions: ['read', 'update'] },
+    { resource: 'clients', actions: ['read', 'update'] },
+    { resource: 'attendances', actions: ['create', 'read', 'update'] },
+    { resource: 'professionals', actions: ['read'] },
+    { resource: 'services', actions: ['read'] },
+    { resource: 'products', actions: ['read'] },
+    { resource: 'stock_movements', actions: ['read'] },
+    { resource: 'reports', actions: ['read'] },
+    { resource: 'dashboard', actions: ['read'] },
+  ],
+  ESTAGIARIO: [
+    { resource: 'patients', actions: ['read'] },
+    { resource: 'appointments', actions: ['read'] },
+    { resource: 'clients', actions: ['read'] },
+    { resource: 'attendances', actions: ['read'] },
+    { resource: 'professionals', actions: ['read'] },
+    { resource: 'services', actions: ['read'] },
+    { resource: 'reports', actions: ['read'] },
+    { resource: 'dashboard', actions: ['read'] },
+  ],
 };
 
 export const hasPermission = (
@@ -236,6 +258,8 @@ export const getRoleDescription = (role: Role): string => {
     TÉCNICO_DE_ENFERMAGEM:
       'Técnico de enfermagem - procedimentos e cuidados aos pacientes',
     SERVICOS_GERAIS: 'Manutenção e organização das instalações',
+    TECNICO: 'Técnico - suporte em procedimentos e atendimentos',
+    ESTAGIARIO: 'Estagiário - acompanhamento e aprendizado',
   };
   return descriptions[role];
 };
