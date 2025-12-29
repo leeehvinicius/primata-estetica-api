@@ -663,6 +663,8 @@ enum Role {
   RECEPCIONISTA // Atendimento inicial e agendamentos
   TÉCNICO_DE_ENFERMAGEM // Técnico de enfermagem - procedimentos e cuidados
   SERVICOS_GERAIS // Manutenção e organização das instalações
+  TECNICO // Técnico
+  ESTAGIARIO // Estagiário
 }
 
 enum Gender {
