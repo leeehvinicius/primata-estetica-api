@@ -254,7 +254,7 @@ export class AppointmentsController {
     type: AppointmentStatsResponseDto,
   })
   @Get('stats/overview')
-  @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+  @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA, Role.TECNICO, Role.ESTAGIARIO, Role.TÉCNICO_DE_ENFERMAGEM)
   @RequirePermission('appointments', 'read')
   @UseGuards(RolePermissionGuard)
   getStats() {
