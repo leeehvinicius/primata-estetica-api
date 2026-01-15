@@ -74,6 +74,8 @@ export class AppointmentsController {
     Role.ADMINISTRADOR,
     Role.MEDICO,
     Role.RECEPCIONISTA,
+    Role.TECNICO,
+    Role.ESTAGIARIO,
     Role.TÉCNICO_DE_ENFERMAGEM,
   )
   @RequirePermission('appointments', 'read')

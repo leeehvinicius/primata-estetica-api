@@ -70,7 +70,7 @@ export class ServicesController {
     type: ServiceListResponseDto,
   })
   @Get()
-  @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA)
+  @Roles(Role.ADMINISTRADOR, Role.MEDICO, Role.RECEPCIONISTA, Role.TECNICO, Role.ESTAGIARIO, Role.TÉCNICO_DE_ENFERMAGEM)
   @RequirePermission('services', 'read')
   @UseGuards(RolePermissionGuard)
   @ApiQuery({
