@@ -178,7 +178,7 @@ export class ServicesService {
   async findAll(query: ListServicesDto) {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       search,
       serviceCategoryId,
       isActive,
@@ -505,7 +505,7 @@ export class ServicesService {
         currentPrice: true,
         duration: true,
       },
-      take: 10,
+      take: 500,
     });
   }
 
@@ -523,7 +523,7 @@ export class ServicesService {
         currentPrice: true,
         duration: true,
       },
-      take: 10,
+      take: 500,
     });
   }
 
@@ -590,7 +590,7 @@ export class ServicesService {
   async listServiceCategories(query: any) {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       name,
       isActive,
       sortBy = 'name',

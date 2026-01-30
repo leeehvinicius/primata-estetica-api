@@ -28,13 +28,13 @@ export class ListServiceCategoriesDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiProperty({ required: false, default: 10 })
+  @ApiProperty({ required: false, default: 500 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(500)
+  limit?: number = 500;
 
   @ApiProperty({ required: false, default: 'name' })
   @IsOptional()

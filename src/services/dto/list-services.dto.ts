@@ -20,14 +20,14 @@ export class ListServicesDto {
   @ApiProperty({
     description: 'Itens por página',
     required: false,
-    default: 10,
+    default: 500,
   })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(500)
+  limit?: number = 500;
 
   @ApiProperty({ description: 'Buscar por nome ou descrição', required: false })
   @IsOptional()
