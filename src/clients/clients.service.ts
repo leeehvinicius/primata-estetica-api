@@ -67,7 +67,7 @@ export class ClientsService {
   async findAll(query: ListClientsDto) {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       search,
       gender,
       isActive,

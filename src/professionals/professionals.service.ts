@@ -67,7 +67,7 @@ export class ProfessionalsService {
   async findAll(query: ListProfessionalsDto) {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       search,
       specialty,
       gender,

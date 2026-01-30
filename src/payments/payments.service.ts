@@ -198,7 +198,7 @@ export class PaymentsService {
   async findAll(query: ListPaymentsDto) {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       clientName,
       paymentMethod,
       paymentStatus,

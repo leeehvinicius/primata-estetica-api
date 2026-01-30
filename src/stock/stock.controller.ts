@@ -405,7 +405,7 @@ export class StockController {
   getStockMovements(
     @Query('productId') productId?: string,
     @Query('page') page = 1,
-    @Query('limit') limit = 10,
+    @Query('limit') limit = 500,
   ) {
     return this.stockService.getStockMovements(productId, page, limit);
   }

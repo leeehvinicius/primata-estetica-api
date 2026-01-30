@@ -41,7 +41,7 @@ export class StockService {
   async listCategories(query: ListProductCategoriesDto) {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       name,
       isActive,
       sortBy = 'name',
@@ -240,7 +240,7 @@ export class StockService {
   async findAllProducts(query: ListProductsDto) {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       name,
       sku,
       barcode,
@@ -577,7 +577,7 @@ export class StockService {
     return movement;
   }
 
-  async getStockMovements(productId?: string, page = 1, limit = 10) {
+  async getStockMovements(productId?: string, page = 1, limit = 500) {
     const skip = (page - 1) * limit;
 
     const where: any = {};

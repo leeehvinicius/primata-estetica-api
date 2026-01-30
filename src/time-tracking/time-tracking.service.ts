@@ -134,7 +134,7 @@ export class TimeTrackingService {
   }> {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       sortBy = 'timestamp',
       sortOrder = 'desc',
       ...filters

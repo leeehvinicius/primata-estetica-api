@@ -196,7 +196,7 @@ export class AppointmentsService {
   async findAll(query: ListAppointmentsDto) {
     const {
       page = 1,
-      limit = 10,
+      limit = 500,
       clientName,
       professionalName,
       appointmentType,
