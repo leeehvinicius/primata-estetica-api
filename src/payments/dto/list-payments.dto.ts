@@ -28,7 +28,7 @@ export class ListPaymentsDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(100)
+  @Max(500)
   limit?: number = 10;
 
   @ApiProperty({ description: 'Buscar por nome do cliente', required: false })
