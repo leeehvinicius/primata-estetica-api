@@ -7,7 +7,7 @@ export interface Permission {
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ADMINISTRADOR: [
-    { resource: 'users', actions: ['create', 'read', 'update', 'delete'] },
+    { resource: 'users', actions: ['create', 'read', 'update', 'delete', 'search'] },
     { resource: 'profiles', actions: ['create', 'read', 'update', 'delete'] },
     {
       resource: 'appointments',
@@ -115,6 +115,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     },
   ],
   MEDICO: [
+    { resource: 'users', actions: ['search'] },
     { resource: 'patients', actions: ['read', 'update'] },
     { resource: 'medical_records', actions: ['create', 'read', 'update'] },
     { resource: 'appointments', actions: ['read', 'update'] },
@@ -151,6 +152,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'partners', actions: ['read'] },
   ],
   RECEPCIONISTA: [
+    { resource: 'users', actions: ['search'] },
     { resource: 'patients', actions: ['create', 'read'] },
     { resource: 'appointments', actions: ['create', 'read', 'update'] },
     { resource: 'profiles', actions: ['read'] },
@@ -190,6 +192,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'external-integration', actions: ['read'] },
   ],
   TÉCNICO_DE_ENFERMAGEM: [
+    { resource: 'users', actions: ['search'] },
     { resource: 'patients', actions: ['read', 'update'] },
     { resource: 'appointments', actions: ['create', 'read', 'update'] },
     { resource: 'clients', actions: ['read', 'update'] },
@@ -211,6 +214,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'cleaning_schedule', actions: ['read', 'update'] },
   ],
   TECNICO: [
+    { resource: 'users', actions: ['search'] },
     { resource: 'patients', actions: ['read', 'update'] },
     { resource: 'appointments', actions: ['read', 'update'] },
     { resource: 'clients', actions: ['read', 'update'] },
@@ -223,6 +227,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { resource: 'dashboard', actions: ['read'] },
   ],
   ESTAGIARIO: [
+    { resource: 'users', actions: ['search'] },
     { resource: 'patients', actions: ['read'] },
     { resource: 'appointments', actions: ['read'] },
     { resource: 'clients', actions: ['read'] },

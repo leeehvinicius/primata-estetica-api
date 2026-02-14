@@ -28,7 +28,11 @@ export class CreateUserDto {
   @IsOptional()
   phone?: string;
 
-  @ApiProperty({ description: 'CPF/CNPJ do usuário', required: false })
+  @ApiProperty({ description: 'CPF do usuário (11 dígitos, com ou sem formatação)', required: false })
+  @IsOptional()
+  cpf?: string;
+
+  @ApiProperty({ description: 'CPF/CNPJ do usuário (alternativa ao cpf)', required: false })
   @IsOptional()
   document?: string;
 }

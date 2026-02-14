@@ -127,6 +127,22 @@ export class UsersController {
     return this.users.me(userId);
   }
 
+  @ApiOperation({ summary: 'Buscar usuários por CPF ou termo (todos os funcionários)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de usuários encontrados',
+    type: UserListResponseDto,
+  })
+  @Get('search')
+  @UseGuards(RolesGuard, RolePermissionGuard)
+  @RequirePermission('users', 'search')
+  @ApiQuery({ name: 'cpf', required: false, description: 'CPF (com ou sem formatação)' })
+  @ApiQuery({ name: 'search', required: false, description: 'Nome, email, telefone ou documento' })
+  search(@Query('cpf') cpf: string, @Query('search') searchTerm: string, @Query() query: ListUsersDto) {
+    const search = cpf ?? searchTerm;
+    return this.users.findAll({ ...query, search, limit: query.limit ?? 50 });
+  }
+
   @ApiOperation({ summary: 'Buscar usuário por ID' })
   @ApiResponse({
     status: 200,

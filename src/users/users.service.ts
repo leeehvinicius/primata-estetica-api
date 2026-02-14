@@ -29,6 +29,8 @@ export class UsersService {
     const passwordHash = await this.hash.hash(dto.password);
     const role = dto.role || 'RECEPCIONISTA';
 
+    const document = dto.cpf ?? dto.document;
+
     return this.prisma.user.create({
       data: {
         email: dto.email,
@@ -38,7 +40,7 @@ export class UsersService {
           create: {
             role,
             phone: dto.phone,
-            document: dto.document,
+            document,
           },
         },
       },
@@ -80,11 +82,33 @@ export class UsersService {
     };
 
     if (search) {
+      const onlyDigits = search.replace(/\D/g, '');
+      const documentConditions: any[] = [
+        { profile: { document: { contains: search, mode: 'insensitive' } } },
+      ];
+      if (onlyDigits.length === 11) {
+        const formattedCpf = `${onlyDigits.slice(0, 3)}.${onlyDigits.slice(3, 6)}.${onlyDigits.slice(6, 9)}-${onlyDigits.slice(9)}`;
+        documentConditions.push({ profile: { document: { contains: formattedCpf, mode: 'insensitive' } } });
+        documentConditions.push({ profile: { document: { equals: onlyDigits } } });
+        documentConditions.push({ profile: { document: { equals: formattedCpf } } });
+      }
+      if (onlyDigits.length >= 1) {
+        const pattern = '%' + onlyDigits + '%';
+        const idsByDocument = await this.prisma.$queryRaw<{ userId: string }[]>`
+          SELECT "userId" FROM "Profile"
+          WHERE document IS NOT NULL
+          AND regexp_replace(document, '[^0-9]', '', 'g') LIKE ${pattern}
+        `;
+        const userIds = idsByDocument.map((r) => r.userId);
+        if (userIds.length > 0) {
+          documentConditions.push({ id: { in: userIds } });
+        }
+      }
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { profile: { phone: { contains: search, mode: 'insensitive' } } },
-        { profile: { document: { contains: search, mode: 'insensitive' } } },
+        ...documentConditions,
       ];
     }
 
