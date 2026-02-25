@@ -25,6 +25,15 @@ export class PhotoCaptureService {
         throw new BadRequestException('Formato de foto inválido');
       }
 
+      const maxPhotoSizeMB = Number(
+        this.configService.get('MAX_PHOTO_SIZE_MB', 5),
+      );
+      if (!this.validatePhotoSize(photoData, maxPhotoSizeMB)) {
+        throw new BadRequestException(
+          `Foto excede o tamanho máximo de ${maxPhotoSizeMB}MB`,
+        );
+      }
+
       // Extrair metadados da foto
       const { mimeType, data } = this.extractBase64Data(photoData);
 
@@ -162,3 +171,5 @@ export class PhotoCaptureService {
     return photoData;
   }
 }
+
+
