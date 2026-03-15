@@ -15,6 +15,7 @@ import {
 } from './dto/time-tracking-report.dto';
 import {
   TimeTracking,
+  Prisma,
   TimeTrackingStatus,
   TimeTrackingType,
   ValidationAction,
@@ -23,6 +24,23 @@ import {
 import { Request } from 'express';
 import { PhotoCaptureService } from './services/photo-capture.service';
 import { LocationService } from './services/location.service';
+
+type TimeTrackingWithUser = Prisma.TimeTrackingGetPayload<{
+  include: { user: { select: { id: true; name: true } } };
+}>;
+
+export interface DailyByUserGroup {
+  date: string;
+  userId: string;
+  userName: string;
+  cpf?: string;
+  records: Array<{
+    id: string;
+    type: TimeTrackingType;
+    status: TimeTrackingStatus;
+    timestamp: Date;
+  }>;
+}
 
 @Injectable()
 export class TimeTrackingService {
@@ -37,7 +55,7 @@ export class TimeTrackingService {
     userId: string,
     request: Request,
   ): Promise<TimeTracking> {
-    // Buscar usuário logado
+    // Buscar usuÃ¡rio logado
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -46,29 +64,29 @@ export class TimeTrackingService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('UsuÃ¡rio nÃ£o encontrado');
     }
 
     if (!user.profile) {
-      throw new BadRequestException('Perfil do usuário não encontrado');
+      throw new BadRequestException('Perfil do usuÃ¡rio nÃ£o encontrado');
     }
 
-    // Verificar se já existe um registro recente do mesmo tipo
+    // Verificar se jÃ¡ existe um registro recente do mesmo tipo
     const recentRecord = await this.prisma.timeTracking.findFirst({
       where: {
         userId: user.id,
         type: registerDto.type,
         timestamp: {
-          gte: new Date(Date.now() - 5 * 60 * 1000), // Últimos 5 minutos
+          gte: new Date(Date.now() - 5 * 60 * 1000), // Ãšltimos 5 minutos
         },
       },
     });
 
     if (recentRecord) {
-      throw new BadRequestException('Já existe um registro recente deste tipo');
+      throw new BadRequestException('JÃ¡ existe um registro recente deste tipo');
     }
 
-    // Validar horário de registro considerando atendimentos
+    // Validar horÃ¡rio de registro considerando atendimentos
     const currentTime = new Date();
     await this.validateWorkingHoursWithAppointments(
       currentTime,
@@ -76,7 +94,7 @@ export class TimeTrackingService {
       user.email,
     );
 
-    // Validar localização se fornecida
+    // Validar localizaÃ§Ã£o se fornecida
     if (registerDto.location) {
       await this.validateLocation(registerDto.location, user.id);
     }
@@ -94,7 +112,7 @@ export class TimeTrackingService {
     const timeTracking = await this.prisma.timeTracking.create({
       data: {
         userId: user.id,
-        cpf: user.profile.document || '', // Usar CPF do perfil do usuário
+        cpf: user.profile.document || '', // Usar CPF do perfil do usuÃ¡rio
         photoUrl,
         photoData: registerDto.photoData,
         latitude: registerDto.location?.latitude,
@@ -132,61 +150,10 @@ export class TimeTrackingService {
     page: number;
     limit: number;
   }> {
-    const {
-      page = 1,
-      limit = 500,
-      sortBy = 'timestamp',
-      sortOrder = 'desc',
-      ...filters
-    } = query;
+    const { page = 1, limit = 500, sortBy = 'timestamp', sortOrder = 'desc' } =
+      query;
     const skip = (page - 1) * limit;
-
-    const where: any = {};
-
-    // Verificar se userId é válido
-    if (!userId) {
-      throw new BadRequestException('ID do usuário é obrigatório');
-    }
-
-    // Se não for admin, só pode ver seus próprios registros
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { profile: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    if (user?.profile?.role !== 'ADMINISTRADOR') {
-      where.userId = userId;
-    }
-
-    if (filters.userId) {
-      where.userId = filters.userId;
-    }
-
-    if (filters.cpf) {
-      where.cpf = filters.cpf;
-    }
-
-    if (filters.type) {
-      where.type = filters.type;
-    }
-
-    if (filters.status) {
-      where.status = filters.status;
-    }
-
-    if (filters.startDate || filters.endDate) {
-      where.timestamp = {};
-      if (filters.startDate) {
-        where.timestamp.gte = new Date(filters.startDate);
-      }
-      if (filters.endDate) {
-        where.timestamp.lte = new Date(filters.endDate);
-      }
-    }
+    const where = await this.buildTimeTrackingWhere(query, userId);
 
     const [data, total] = await Promise.all([
       this.prisma.timeTracking.findMany({
@@ -218,6 +185,90 @@ export class TimeTrackingService {
     };
   }
 
+  async getDailyByUser(
+    query: TimeTrackingQueryDto,
+    userId: string,
+  ): Promise<{
+    data: DailyByUserGroup[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const { page = 1, limit = 50, sortOrder = 'desc' } = query;
+    const where = await this.buildTimeTrackingWhere(query, userId);
+
+    const records = (await this.prisma.timeTracking.findMany({
+      where,
+      orderBy: { timestamp: sortOrder },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    })) as TimeTrackingWithUser[];
+
+    const grouped = new Map<string, DailyByUserGroup>();
+
+    for (const record of records) {
+      const dateKey = record.timestamp.toISOString().split('T')[0];
+      const key = `${record.userId}::${dateKey}`;
+      const existing = grouped.get(key);
+
+      if (!existing) {
+        grouped.set(key, {
+          date: dateKey,
+          userId: record.userId,
+          userName: record.user?.name || 'Sem nome',
+          cpf: record.cpf || undefined,
+          records: [
+            {
+              id: record.id,
+              type: record.type,
+              status: record.status,
+              timestamp: record.timestamp,
+            },
+          ],
+        });
+        continue;
+      }
+
+      existing.records.push({
+        id: record.id,
+        type: record.type,
+        status: record.status,
+        timestamp: record.timestamp,
+      });
+    }
+
+    const items = Array.from(grouped.values())
+      .map((group) => ({
+        ...group,
+        records: group.records.sort(
+          (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+        ),
+      }))
+      .sort((a, b) => {
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) {
+          return sortOrder === 'asc' ? dateCompare : -dateCompare;
+        }
+        return a.userName.localeCompare(b.userName, 'pt-BR');
+      });
+
+    const skip = (page - 1) * limit;
+    const paginated = items.slice(skip, skip + limit);
+
+    return {
+      data: paginated,
+      total: items.length,
+      page,
+      limit,
+    };
+  }
+
   async getTimeTrackingById(id: string, userId: string): Promise<TimeTracking> {
     const timeTracking = await this.prisma.timeTracking.findUnique({
       where: { id },
@@ -236,10 +287,10 @@ export class TimeTrackingService {
     });
 
     if (!timeTracking) {
-      throw new NotFoundException('Registro de ponto não encontrado');
+      throw new NotFoundException('Registro de ponto nÃ£o encontrado');
     }
 
-    // Verificar permissão
+    // Verificar permissÃ£o
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { profile: true },
@@ -250,7 +301,7 @@ export class TimeTrackingService {
       timeTracking.userId !== userId
     ) {
       throw new ForbiddenException(
-        'Você não tem permissão para visualizar este registro',
+        'VocÃª nÃ£o tem permissÃ£o para visualizar este registro',
       );
     }
 
@@ -266,10 +317,10 @@ export class TimeTrackingService {
     });
 
     if (!timeTracking) {
-      throw new NotFoundException('Registro de ponto não encontrado');
+      throw new NotFoundException('Registro de ponto nÃ£o encontrado');
     }
 
-    // Verificar se o usuário tem permissão para validar
+    // Verificar se o usuÃ¡rio tem permissÃ£o para validar
     const validator = await this.prisma.user.findUnique({
       where: { id: validatorId },
       include: { profile: true },
@@ -280,7 +331,7 @@ export class TimeTrackingService {
       !['ADMINISTRADOR', 'MEDICO'].includes(validator.profile?.role || '')
     ) {
       throw new ForbiddenException(
-        'Você não tem permissão para validar registros de ponto',
+        'VocÃª nÃ£o tem permissÃ£o para validar registros de ponto',
       );
     }
 
@@ -315,7 +366,7 @@ export class TimeTrackingService {
       },
     });
 
-    // Criar registro de validação
+    // Criar registro de validaÃ§Ã£o
     await this.prisma.timeTrackingValidation.create({
       data: {
         timeTrackingId: validateDto.timeTrackingId,
@@ -355,7 +406,7 @@ export class TimeTrackingService {
   ) {
     const { userId, periodStart, periodEnd, notes } = reportDto;
 
-    // Buscar todos os registros de ponto do período
+    // Buscar todos os registros de ponto do perÃ­odo
     const timeTrackings = await this.prisma.timeTracking.findMany({
       where: {
         userId,
@@ -407,7 +458,7 @@ export class TimeTrackingService {
   ) {
     const where: any = {};
 
-    // Se não for admin, só pode ver seus próprios relatórios
+    // Se nÃ£o for admin, sÃ³ pode ver seus prÃ³prios relatÃ³rios
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { profile: true },
@@ -458,6 +509,95 @@ export class TimeTrackingService {
     });
   }
 
+  private async buildTimeTrackingWhere(
+    query: TimeTrackingQueryDto,
+    currentUserId: string,
+  ): Promise<Prisma.TimeTrackingWhereInput> {
+    const where: Prisma.TimeTrackingWhereInput = {};
+
+    if (!currentUserId) {
+      throw new BadRequestException('ID do usuario e obrigatorio');
+    }
+
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: currentUserId },
+      include: { profile: true },
+    });
+
+    if (!currentUser) {
+      throw new NotFoundException('Usuario nao encontrado');
+    }
+
+    const isAdmin = currentUser.profile?.role === 'ADMINISTRADOR';
+
+    if (!isAdmin) {
+      where.userId = currentUserId;
+    }
+
+    if (query.userId) {
+      if (!isAdmin && query.userId !== currentUserId) {
+        throw new ForbiddenException(
+          'Voce nao tem permissao para filtrar por outro funcionario',
+        );
+      }
+      where.userId = query.userId;
+    }
+
+    if (query.cpf) {
+      where.cpf = query.cpf;
+    }
+
+    if (query.type) {
+      where.type = query.type;
+    }
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.startDate || query.endDate) {
+      const timestampFilter: Prisma.DateTimeFilter = {};
+      const startDate = this.parseFilterDate(query.startDate, false);
+      const endDate = this.parseFilterDate(query.endDate, true);
+
+      if (startDate) {
+        timestampFilter.gte = startDate;
+      }
+
+      if (endDate) {
+        timestampFilter.lte = endDate;
+      }
+
+      where.timestamp = timestampFilter;
+    }
+
+    return where;
+  }
+
+  private parseFilterDate(
+    value?: string,
+    isEndOfDay = false,
+  ): Date | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return undefined;
+    }
+
+    if (!value.includes('T')) {
+      if (isEndOfDay) {
+        parsed.setHours(23, 59, 59, 999);
+      } else {
+        parsed.setHours(0, 0, 0, 0);
+      }
+    }
+
+    return parsed;
+  }
+
   private async validateLocation(location: any, userId: string): Promise<void> {
     // Validar coordenadas
     if (
@@ -466,54 +606,54 @@ export class TimeTrackingService {
         location.longitude,
       )
     ) {
-      throw new BadRequestException('Coordenadas inválidas');
+      throw new BadRequestException('Coordenadas invÃ¡lidas');
     }
 
-    // Validar precisão
+    // Validar precisÃ£o
     if (
       location.accuracy &&
       !this.locationService.validateAccuracy(location.accuracy)
     ) {
-      throw new BadRequestException('Precisão da localização muito baixa');
+      throw new BadRequestException('PrecisÃ£o da localizaÃ§Ã£o muito baixa');
     }
 
-    // Detectar localização suspeita
+    // Detectar localizaÃ§Ã£o suspeita
     if (this.locationService.detectSuspiciousLocation(location)) {
-      throw new BadRequestException('Localização suspeita detectada');
+      throw new BadRequestException('LocalizaÃ§Ã£o suspeita detectada');
     }
 
-    // Buscar configurações do usuário
+    // Buscar configuraÃ§Ãµes do usuÃ¡rio
     const settings = await this.prisma.timeTrackingSettings.findUnique({
       where: { userId },
     });
 
     if (!settings?.requireLocation) return;
 
-    // Verificar se a localização está dentro dos locais permitidos
+    // Verificar se a localizaÃ§Ã£o estÃ¡ dentro dos locais permitidos
     if (settings.allowedLocations) {
       const allowedLocations = settings.allowedLocations as any[];
       if (!this.locationService.validateLocation(location, allowedLocations)) {
-        throw new BadRequestException('Localização fora dos locais permitidos');
+        throw new BadRequestException('LocalizaÃ§Ã£o fora dos locais permitidos');
       }
     }
   }
 
   /**
-   * Valida o horário de registro considerando atendimentos agendados
-   * Se não houver atendimento registrado, compara com horário padrão
-   * Se houver atendimento agendado até 20:00, permite registro e contabiliza hora extra
+   * Valida o horÃ¡rio de registro considerando atendimentos agendados
+   * Se nÃ£o houver atendimento registrado, compara com horÃ¡rio padrÃ£o
+   * Se houver atendimento agendado atÃ© 20:00, permite registro e contabiliza hora extra
    */
   private async validateWorkingHoursWithAppointments(
     timestamp: Date,
     userId: string,
     userEmail: string,
   ): Promise<void> {
-    // Buscar configurações do usuário para obter horário padrão
+    // Buscar configuraÃ§Ãµes do usuÃ¡rio para obter horÃ¡rio padrÃ£o
     const settings = await this.prisma.timeTrackingSettings.findUnique({
       where: { userId },
     });
 
-    // Definir horário padrão (padrão: 08:00 às 18:00)
+    // Definir horÃ¡rio padrÃ£o (padrÃ£o: 08:00 Ã s 18:00)
     const defaultStartTime = '08:00';
     const defaultEndTime = '18:00';
     const workingHours = settings?.workingHours as any;
@@ -526,7 +666,7 @@ export class TimeTrackingService {
     const nextDay = new Date(currentDate);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    // Buscar profissional associado ao usuário (se existir)
+    // Buscar profissional associado ao usuÃ¡rio (se existir)
     const professional = await this.prisma.professional.findFirst({
       where: {
         email: userEmail,
@@ -534,9 +674,9 @@ export class TimeTrackingService {
       },
     });
 
-    // Buscar atendimentos do dia atual onde o usuário está envolvido
-    // 1. Atendimentos onde o usuário é o profissional
-    // 2. Atendimentos criados pelo usuário
+    // Buscar atendimentos do dia atual onde o usuÃ¡rio estÃ¡ envolvido
+    // 1. Atendimentos onde o usuÃ¡rio Ã© o profissional
+    // 2. Atendimentos criados pelo usuÃ¡rio
     const orConditions: any[] = [];
 
     if (professional) {
@@ -562,7 +702,7 @@ export class TimeTrackingService {
       },
     });
 
-    // Se não houver atendimento registrado, comparar com horário padrão
+    // Se nÃ£o houver atendimento registrado, comparar com horÃ¡rio padrÃ£o
     if (appointments.length === 0) {
       const currentHour = timestamp.getHours();
       const currentMinute = timestamp.getMinutes();
@@ -571,20 +711,20 @@ export class TimeTrackingService {
       const [startHour, startMin] = standardStartTime.split(':').map(Number);
       const startTimeInMinutes = startHour * 60 + startMin;
 
-      // Se estiver antes do horário padrão de início, lançar exceção
+      // Se estiver antes do horÃ¡rio padrÃ£o de inÃ­cio, lanÃ§ar exceÃ§Ã£o
       if (currentTimeInMinutes < startTimeInMinutes) {
         throw new BadRequestException(
-          `Registro de ponto antes do horário padrão de atendimento (${standardStartTime})`,
+          `Registro de ponto antes do horÃ¡rio padrÃ£o de atendimento (${standardStartTime})`,
         );
       }
 
-      // Permitir registro se estiver dentro ou após o horário padrão
-      // Horas extras serão calculadas posteriormente no cálculo de horas trabalhadas
-      // se o registro for após o horário padrão de término
+      // Permitir registro se estiver dentro ou apÃ³s o horÃ¡rio padrÃ£o
+      // Horas extras serÃ£o calculadas posteriormente no cÃ¡lculo de horas trabalhadas
+      // se o registro for apÃ³s o horÃ¡rio padrÃ£o de tÃ©rmino
       return;
     }
 
-    // Se houver atendimento agendado, verificar se algum é até 20:00
+    // Se houver atendimento agendado, verificar se algum Ã© atÃ© 20:00
     const hasAppointmentUntil20 = appointments.some((appointment) => {
       const [endHour, endMin] = appointment.endTime.split(':').map(Number);
       const appointmentEndTimeInMinutes = endHour * 60 + endMin;
@@ -594,13 +734,13 @@ export class TimeTrackingService {
     });
 
     if (hasAppointmentUntil20) {
-      // Se houver atendimento até 20:00, considerar horário válido
-      // O registro será permitido e a hora extra será contabilizada no cálculo
+      // Se houver atendimento atÃ© 20:00, considerar horÃ¡rio vÃ¡lido
+      // O registro serÃ¡ permitido e a hora extra serÃ¡ contabilizada no cÃ¡lculo
       return;
     }
 
-    // Se houver atendimento após 20:00, ainda permitir mas será tratado como hora extra
-    // A validação básica já foi feita, então permitimos o registro
+    // Se houver atendimento apÃ³s 20:00, ainda permitir mas serÃ¡ tratado como hora extra
+    // A validaÃ§Ã£o bÃ¡sica jÃ¡ foi feita, entÃ£o permitimos o registro
   }
 
   private calculateWorkingHours(timeTrackings: TimeTracking[]): {
@@ -611,7 +751,7 @@ export class TimeTrackingService {
     daysWorked: number;
     daysAbsent: number;
   } {
-    // Implementar cálculo de horas trabalhadas
+    // Implementar cÃ¡lculo de horas trabalhadas
     // Por enquanto, retorna valores mock
     return {
       totalHours: 8.0,

@@ -69,6 +69,19 @@ export class TimeTrackingController {
     return this.timeTrackingService.getTimeTrackings(query, userId);
   }
 
+  @Get('daily-by-user')
+  @ApiOperation({ summary: 'Listar registros agrupados por funcionario e dia' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista agrupada por funcionario com pontos do dia',
+  })
+  async getDailyByUser(
+    @Query() query: TimeTrackingQueryDto,
+    @GetUser('id') userId: string,
+  ) {
+    return this.timeTrackingService.getDailyByUser(query, userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar registro de ponto por ID' })
   @ApiResponse({ status: 200, description: 'Registro de ponto encontrado' })
