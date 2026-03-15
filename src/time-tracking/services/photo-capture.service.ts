@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Request } from 'express';
 
 @Injectable()
 export class PhotoCaptureService {
@@ -18,7 +19,11 @@ export class PhotoCaptureService {
    * @param userId ID do usuário
    * @returns URL da foto salva
    */
-  async processPhoto(photoData: string, userId: string): Promise<string> {
+  async processPhoto(
+    photoData: string,
+    userId: string,
+    request?: Request,
+  ): Promise<string> {
     try {
       // Validar formato da foto
       if (!this.isValidBase64Image(photoData)) {
@@ -50,7 +55,7 @@ export class PhotoCaptureService {
       await fs.promises.writeFile(filePath, data);
 
       // Retornar URL da foto
-      return this.getPhotoUrl(fileName);
+      return this.getPhotoUrl(fileName, request);
     } catch (error) {
       throw new BadRequestException(`Erro ao processar foto: ${error.message}`);
     }
@@ -111,9 +116,34 @@ export class PhotoCaptureService {
    * @param fileName Nome do arquivo
    * @returns URL da foto
    */
-  private getPhotoUrl(fileName: string): string {
-    const baseUrl = this.configService.get('BASE_URL', 'http://localhost:3000');
+  private getPhotoUrl(fileName: string, request?: Request): string {
+    const requestBaseUrl = this.getRequestBaseUrl(request);
+    const baseUrl =
+      requestBaseUrl ||
+      this.configService.get<string>('BASE_URL') ||
+      'http://localhost:3000';
     return `${baseUrl}/uploads/photos/${fileName}`;
+  }
+
+  private getRequestBaseUrl(request?: Request): string | undefined {
+    if (!request) {
+      return undefined;
+    }
+
+    const forwardedProto = request.headers['x-forwarded-proto'];
+    const forwardedHost = request.headers['x-forwarded-host'];
+    const hostHeader = forwardedHost || request.headers.host;
+
+    const proto = Array.isArray(forwardedProto)
+      ? forwardedProto[0]
+      : forwardedProto || request.protocol;
+    const host = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
+
+    if (!proto || !host) {
+      return undefined;
+    }
+
+    return `${proto}://${host}`;
   }
 
   /**

@@ -2,10 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
+import { join, isAbsolute } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const bodyLimit = process.env.BODY_LIMIT || '10mb';
   app.use(json({ limit: bodyLimit }));
@@ -15,6 +17,12 @@ async function bootstrap() {
   app.enableCors();
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  const uploadPath = process.env.UPLOAD_PATH || './uploads/photos';
+  const uploadAbsolutePath = isAbsolute(uploadPath)
+    ? uploadPath
+    : join(process.cwd(), uploadPath);
+  app.useStaticAssets(uploadAbsolutePath, { prefix: '/uploads/photos' });
 
   // Swagger (habilite/ajuste como preferir)
   const config = new DocumentBuilder()

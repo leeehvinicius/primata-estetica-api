@@ -222,6 +222,7 @@ export class TimeTrackingController {
   async capturePhoto(
     @Body() photoData: { photoData: string },
     @GetUser('id') userId: string,
+    @Request() request: any,
   ) {
     if (!photoData.photoData) {
       throw new BadRequestException('Dados da foto são obrigatórios');
@@ -231,6 +232,7 @@ export class TimeTrackingController {
     const photoUrl = await this.photoCaptureService.processPhoto(
       photoData.photoData,
       userId,
+      request,
     );
 
     return {

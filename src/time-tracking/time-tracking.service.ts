@@ -105,6 +105,7 @@ export class TimeTrackingService {
       photoUrl = await this.photoCaptureService.processPhoto(
         registerDto.photoData,
         user.id,
+        request,
       );
     }
 
