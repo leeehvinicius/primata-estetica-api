@@ -37,8 +37,6 @@ export interface DailyByUserGroup {
   userName: string;
   cpf?: string;
   workedHours: number;
-  hourlyRate: number;
-  dayValue: number;
   records: Array<{
     id: string;
     type: TimeTrackingType;
@@ -219,33 +217,6 @@ export class TimeTrackingService {
       },
     })) as TimeTrackingWithUser[];
 
-    const professionals = await (this.prisma as any).professional.findMany({
-      where: {
-        isActive: true,
-      },
-      select: {
-        email: true,
-        document: true,
-        salary: true,
-      },
-    });
-
-    const salaryByEmail = new Map<string, number>();
-    const salaryByDocument = new Map<string, number>();
-
-    for (const professional of professionals) {
-      const salary =
-        professional.salary != null ? Number(professional.salary) : 0;
-
-      if (professional.email) {
-        salaryByEmail.set(String(professional.email).trim().toLowerCase(), salary);
-      }
-
-      if (professional.document) {
-        salaryByDocument.set(String(professional.document).trim(), salary);
-      }
-    }
-
     const grouped = new Map<string, DailyByUserGroup>();
 
     for (const record of records) {
@@ -260,8 +231,6 @@ export class TimeTrackingService {
           userName: record.user?.name || 'Sem nome',
           cpf: record.cpf || undefined,
           workedHours: 0,
-          hourlyRate: 0,
-          dayValue: 0,
           records: [
             {
               id: record.id,
@@ -288,29 +257,12 @@ export class TimeTrackingService {
           (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
         );
 
-        const userRecord = records.find((record) => record.userId === group.userId);
-        const normalizedEmail = userRecord?.user?.email?.trim().toLowerCase();
-        const normalizedDocument =
-          group.cpf?.trim() || userRecord?.user?.profile?.document?.trim();
-
-        const salaryFromDocument = normalizedDocument
-          ? salaryByDocument.get(normalizedDocument)
-          : undefined;
-        const salaryFromEmail = normalizedEmail
-          ? salaryByEmail.get(normalizedEmail)
-          : undefined;
-        const salary = salaryFromDocument ?? salaryFromEmail ?? 0;
-
         const workedHours = this.calculateWorkedHoursForDay(orderedRecords);
-        const hourlyRate = salary > 0 ? salary / 220 : 0;
-        const dayValue = workedHours * hourlyRate;
 
         return {
           ...group,
           records: orderedRecords,
           workedHours,
-          hourlyRate,
-          dayValue,
         };
       })
       .sort((a, b) => {
