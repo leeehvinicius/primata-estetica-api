@@ -26,7 +26,9 @@ import { PhotoCaptureService } from './services/photo-capture.service';
 import { LocationService } from './services/location.service';
 
 type TimeTrackingWithUser = Prisma.TimeTrackingGetPayload<{
-  include: { user: { select: { id: true; name: true } } };
+  include: {
+    user: { include: { profile: { select: { document: true } } } };
+  };
 }>;
 
 export interface DailyByUserGroup {
@@ -34,6 +36,9 @@ export interface DailyByUserGroup {
   userId: string;
   userName: string;
   cpf?: string;
+  workedHours: number;
+  hourlyRate: number;
+  dayValue: number;
   records: Array<{
     id: string;
     type: TimeTrackingType;
@@ -203,13 +208,43 @@ export class TimeTrackingService {
       orderBy: { timestamp: sortOrder },
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
+          include: {
+            profile: {
+              select: {
+                document: true,
+              },
+            },
           },
         },
       },
     })) as TimeTrackingWithUser[];
+
+    const professionals = await (this.prisma as any).professional.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        email: true,
+        document: true,
+        salary: true,
+      },
+    });
+
+    const salaryByEmail = new Map<string, number>();
+    const salaryByDocument = new Map<string, number>();
+
+    for (const professional of professionals) {
+      const salary =
+        professional.salary != null ? Number(professional.salary) : 0;
+
+      if (professional.email) {
+        salaryByEmail.set(String(professional.email).trim().toLowerCase(), salary);
+      }
+
+      if (professional.document) {
+        salaryByDocument.set(String(professional.document).trim(), salary);
+      }
+    }
 
     const grouped = new Map<string, DailyByUserGroup>();
 
@@ -224,6 +259,9 @@ export class TimeTrackingService {
           userId: record.userId,
           userName: record.user?.name || 'Sem nome',
           cpf: record.cpf || undefined,
+          workedHours: 0,
+          hourlyRate: 0,
+          dayValue: 0,
           records: [
             {
               id: record.id,
@@ -245,12 +283,33 @@ export class TimeTrackingService {
     }
 
     const items = Array.from(grouped.values())
-      .map((group) => ({
-        ...group,
-        records: group.records.sort(
+      .map((group) => {
+        const orderedRecords = group.records.sort(
           (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
-        ),
-      }))
+        );
+
+        const userRecord = records.find((record) => record.userId === group.userId);
+        const normalizedEmail = userRecord?.user?.email?.trim().toLowerCase();
+        const normalizedDocument =
+          group.cpf?.trim() || userRecord?.user?.profile?.document?.trim();
+
+        const salary =
+          (normalizedDocument && salaryByDocument.get(normalizedDocument)) ??
+          (normalizedEmail && salaryByEmail.get(normalizedEmail)) ??
+          0;
+
+        const workedHours = this.calculateWorkedHoursForDay(orderedRecords);
+        const hourlyRate = salary > 0 ? salary / 220 : 0;
+        const dayValue = workedHours * hourlyRate;
+
+        return {
+          ...group,
+          records: orderedRecords,
+          workedHours,
+          hourlyRate,
+          dayValue,
+        };
+      })
       .sort((a, b) => {
         const dateCompare = a.date.localeCompare(b.date);
         if (dateCompare !== 0) {
@@ -762,5 +821,51 @@ export class TimeTrackingService {
       daysWorked: 1,
       daysAbsent: 0,
     };
+  }
+
+  private calculateWorkedHoursForDay(
+    records: Array<{
+      type: TimeTrackingType;
+      timestamp: Date;
+    }>,
+  ): number {
+    let currentEntry: Date | null = null;
+    let totalMilliseconds = 0;
+
+    for (const record of records) {
+      if (this.isEntryType(record.type)) {
+        currentEntry = record.timestamp;
+        continue;
+      }
+
+      if (!this.isExitType(record.type) || !currentEntry) {
+        continue;
+      }
+
+      const diff = record.timestamp.getTime() - currentEntry.getTime();
+      if (diff > 0) {
+        totalMilliseconds += diff;
+      }
+
+      currentEntry = null;
+    }
+
+    return totalMilliseconds / (1000 * 60 * 60);
+  }
+
+  private isEntryType(type: TimeTrackingType): boolean {
+    return (
+      type === ('CHECK_IN' as TimeTrackingType) ||
+      type === ('ENTRADA' as TimeTrackingType) ||
+      type === ('RETORNO' as TimeTrackingType)
+    );
+  }
+
+  private isExitType(type: TimeTrackingType): boolean {
+    return (
+      type === ('CHECK_OUT' as TimeTrackingType) ||
+      type === ('SAIDA' as TimeTrackingType) ||
+      type === ('INTERVALO' as TimeTrackingType)
+    );
   }
 }
