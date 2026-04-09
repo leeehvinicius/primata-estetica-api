@@ -15,6 +15,7 @@ import { BaileysIntegrationService } from '../external-integration/services/bail
 @Injectable()
 export class AppointmentsService {
   private readonly logger = new Logger(AppointmentsService.name);
+  private readonly maxSimultaneousAppointmentsPerSlot = 2000;
 
   constructor(
     private prisma: PrismaService,
@@ -914,49 +915,15 @@ export class AppointmentsService {
       return true;
     }
 
-    // Se não temos o serviço atual, não podemos aplicar as regras de negócio
-    // Neste caso, manter comportamento conservador (permitir apenas se não houver conflitos)
-    if (!currentService) {
-      this.logger.debug(
-        `Serviço não encontrado para serviceId=${serviceId}, bloqueando agendamento`,
-      );
-      return false;
-    }
+    const canSchedule =
+      conflictingAppointments.length <
+      this.maxSimultaneousAppointmentsPerSlot;
 
-    // Verificar se o serviço atual é injetável
-    const isCurrentServiceInjectable = this.isInjectableService(currentService);
-
-    // Para serviços injetáveis: permitir até 2 agendamentos simultâneos no mesmo horário
-    if (isCurrentServiceInjectable) {
-      const injectableAppointments = conflictingAppointments.filter((apt: any) =>
-        this.isInjectableService(apt.service),
-      );
-      const canSchedule = injectableAppointments.length < 2;
-      this.logger.debug(
-        `Serviço injetável: agendamentos injetáveis conflitantes=${injectableAppointments.length}, pode agendar=${canSchedule}`,
-      );
-      return canSchedule;
-    }
-
-    // Para outros serviços: permitir se forem serviços diferentes
-    // Verificar se todos os agendamentos conflitantes são de serviços diferentes
-    const hasSameService = conflictingAppointments.some(
-      (apt: any) => apt.serviceId === serviceId,
-    );
-
-    // Se há algum agendamento com o mesmo serviço, não permitir
-    if (hasSameService) {
-      this.logger.debug(
-        `Encontrado agendamento com mesmo serviço (serviceId=${serviceId}), bloqueando`,
-      );
-      return false;
-    }
-
-    // Se todos os agendamentos são de serviços diferentes, permitir
     this.logger.debug(
-      `Todos os agendamentos conflitantes são de serviços diferentes, permitindo agendamento`,
+      `Limite simultaneo por horario: conflitos=${conflictingAppointments.length}, limite=${this.maxSimultaneousAppointmentsPerSlot}, pode agendar=${canSchedule}, serviceId=${serviceId}, currentServiceFound=${Boolean(currentService)}`,
     );
-    return true;
+
+    return canSchedule;
   }
 
   /**
