@@ -293,10 +293,13 @@ export class TimeTrackingService {
         const normalizedDocument =
           group.cpf?.trim() || userRecord?.user?.profile?.document?.trim();
 
-        const salary =
-          (normalizedDocument && salaryByDocument.get(normalizedDocument)) ??
-          (normalizedEmail && salaryByEmail.get(normalizedEmail)) ??
-          0;
+        const salaryFromDocument = normalizedDocument
+          ? salaryByDocument.get(normalizedDocument)
+          : undefined;
+        const salaryFromEmail = normalizedEmail
+          ? salaryByEmail.get(normalizedEmail)
+          : undefined;
+        const salary = salaryFromDocument ?? salaryFromEmail ?? 0;
 
         const workedHours = this.calculateWorkedHoursForDay(orderedRecords);
         const hourlyRate = salary > 0 ? salary / 220 : 0;
