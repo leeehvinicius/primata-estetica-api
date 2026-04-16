@@ -29,11 +29,14 @@ export class ListAppointmentsDto {
     default: 10,
   })
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => {
+    const n = Number(value);
+    return n === 100 ? 10000 : n;
+  })
   @IsNumber()
   @Min(1)
-  @Max(2000)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 1000;
 
   @ApiProperty({ description: 'Buscar por nome do cliente', required: false })
   @IsOptional()
