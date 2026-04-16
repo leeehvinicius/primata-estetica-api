@@ -32,7 +32,7 @@ export class ListAppointmentsDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(500)
+  @Max(2000)
   limit?: number = 10;
 
   @ApiProperty({ description: 'Buscar por nome do cliente', required: false })
