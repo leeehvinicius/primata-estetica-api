@@ -71,6 +71,19 @@ export class AppointmentsService {
     const endTime = new Date(startTime.getTime() + service.duration * 60000);
     const endTimeString = endTime.toTimeString().slice(0, 5);
 
+    console.log('[appointments] create debug', {
+      clientId: dto.clientId,
+      professionalId: dto.professionalId,
+      serviceId: dto.serviceId,
+      scheduledDate: dto.scheduledDate,
+      startTime: dto.startTime,
+      endTime: endTimeString,
+      duration: service.duration,
+      appointmentType: dto.appointmentType,
+      priority: dto.priority,
+      notes: dto.notes,
+    });
+
     // Verificar disponibilidade
     const isAvailable = await this.checkAvailability(
       dto.scheduledDate,
@@ -80,6 +93,8 @@ export class AppointmentsService {
       dto.serviceId,
     );
 
+    console.log('[appointments] availability result', { isAvailable });
+
     if (!isAvailable) {
       throw new ConflictException('Horário não disponível');
     }
@@ -87,7 +102,7 @@ export class AppointmentsService {
     const appointmentData: any = {
       clientId: dto.clientId,
       serviceId: dto.serviceId,
-      scheduledDate: new Date(dto.scheduledDate),
+      scheduledDate: this.parseDateOnly(dto.scheduledDate),
       startTime: dto.startTime,
       endTime: endTimeString,
       duration: service.duration,
@@ -535,7 +550,7 @@ export class AppointmentsService {
       updateData.professionalId = dto.professionalId;
     if (dto.serviceId !== undefined) updateData.serviceId = dto.serviceId;
     if (dto.scheduledDate !== undefined)
-      updateData.scheduledDate = new Date(dto.scheduledDate);
+      updateData.scheduledDate = this.parseDateOnly(dto.scheduledDate);
     if (dto.startTime !== undefined) updateData.startTime = dto.startTime;
     if (dto.partnerId !== undefined) updateData.partnerId = dto.partnerId;
     if (dto.appointmentType !== undefined)
@@ -712,7 +727,7 @@ export class AppointmentsService {
         clientId: appointment.clientId,
         professionalId: appointment.professionalId,
         serviceId: appointment.serviceId,
-        scheduledDate: new Date(newDate),
+        scheduledDate: this.parseDateOnly(newDate),
         startTime: newTime,
         endTime: endTimeString,
         duration: service.duration,
@@ -817,7 +832,7 @@ export class AppointmentsService {
   ) {
     // Converter a data para o formato correto (YYYY-MM-DD para comparação)
     // Garantir que a data seja tratada como início do dia para comparação correta
-    const dateObj = new Date(date + 'T00:00:00');
+    const dateObj = this.parseDateOnly(date);
     const scheduledDateStart = new Date(
       dateObj.getFullYear(),
       dateObj.getMonth(),
@@ -967,7 +982,7 @@ export class AppointmentsService {
     professionalId?: string,
     serviceId?: string,
   ) {
-    const scheduledDate = new Date(date);
+    const scheduledDate = this.parseDateOnly(date);
     const dayOfWeek = this.getDayOfWeek(scheduledDate);
 
     // Horários padrão de trabalho (8h às 18h)
@@ -1080,6 +1095,11 @@ export class AppointmentsService {
         },
       });
     }
+  }
+
+  private parseDateOnly(date: string): Date {
+    // Date-only strings must be parsed with explicit midnight to avoid timezone shifts.
+    return date.length === 10 ? new Date(`${date}T00:00:00`) : new Date(date);
   }
 
   private getDayOfWeek(date: Date): string {
